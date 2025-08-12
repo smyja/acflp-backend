@@ -97,8 +97,7 @@ class AdminAuthProvider(AuthProvider):
         return response
 
 
-# Configure templates for custom admin views
-templates = Jinja2Templates(directory="app/templates")
+
 
 
 
@@ -107,6 +106,7 @@ admin = Admin(
     title="ACFLP Admin",
     base_url="/admin",
     auth_provider=AdminAuthProvider(),
+    templates_dir="app/templates",
 )
 
 # your ModelView registrations...
@@ -117,7 +117,7 @@ admin.add_view(ModelView(TaskSubmission, icon="fa fa-file-text"))
 admin.add_view(ModelView(UserEarning, icon="fa fa-dollar-sign"))
 
 # add the custom pages as CustomView instances
-admin.add_view(BulkTaskImportView(templates))
-admin.add_view(FlexibleBulkImportView(templates))
+admin.add_view(BulkTaskImportView())
+admin.add_view(FlexibleBulkImportView())
 
 admin.mount_to(app)

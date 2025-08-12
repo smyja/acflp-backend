@@ -17,7 +17,7 @@ from app.models import Task, BulkTaskImportItem, TaskCreate, FlexibleBulkImportR
 class FlexibleBulkImportView(CustomView):
     """Custom admin view for flexible JSONL import with field mapping"""
 
-    def __init__(self, templates: Jinja2Templates):
+    def __init__(self):
         super().__init__(
             label="Flexible JSONL Import",
             icon="fa fa-magic",
@@ -27,7 +27,6 @@ class FlexibleBulkImportView(CustomView):
             methods=["GET", "POST"],
             add_to_menu=True
         )
-        self.templates = templates
     def is_accessible(self, request: Request) -> bool:
         """Only allow access to authenticated admin users"""
         return request.session.get("admin_user") is not None
@@ -282,7 +281,7 @@ class FlexibleBulkImportView(CustomView):
 class BulkTaskImportView(CustomView):
     """Custom admin view for bulk task import from JSONL files"""
 
-    def __init__(self, templates: Jinja2Templates):
+    def __init__(self):
         super().__init__(
             label="Bulk Task Import",
             icon="fa fa-upload",
@@ -292,7 +291,6 @@ class BulkTaskImportView(CustomView):
             methods=["GET", "POST"],
             add_to_menu=True
         )
-        self.templates = templates
 
     def is_accessible(self, request: Request) -> bool:
         """Only allow access to authenticated admin users"""
