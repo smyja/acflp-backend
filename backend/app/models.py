@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from enum import Enum
 from decimal import Decimal
+from typing import Any
 
 import sqlalchemy as sa
 from pydantic import EmailStr

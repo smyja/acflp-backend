@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+    
+    
+    <title>ACFLP Admin</title>
+    <link rel="stylesheet" href="http://localhost:8000/admin/statics/css/tabler.min-1.1.0.css">
+    <link rel="stylesheet" href="http://localhost:8000/admin/statics/css/fontawesome.min.css">
+    <style>
+        @import url('https://rsms.me/inter/inter.css');
+
+        :root {
+            --tblr-font-sans-serif: 'Inter Var', -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif;
+        }
+
+        body {
+            font-feature-settings: "cv03", "cv04", "cv11";
+        }
+
+        .navbar-logo {
+            width: auto;
+            height: 2rem;
+        }
+    </style>
+    
+</head>
+
+<body>
+
+    <div class="page">
+        
+
+        
+            
+        
+        <div class="page-wrapper">
+            <div class="container-fluid">
+                <div class="page-header d-print-none">
+                    
+                </div>
+            </div>
+            <div class="page-body flex-grow-1">
+                <div class="container-fluid">
+                    <div class="row row-deck row-cards">
+                        
+    <div class="container-tight">
+        
+        <form class="card card-md" action="http://localhost:8000/admin/login?next=http%3A%2F%2Flocalhost%3A8000%2Fadmin%2F" method="POST">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">Login to your account</h2>
+                
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <input type="text"
+                           name="username"
+                           class="form-control "
+                           placeholder="Username"
+                           autocomplete="off"/>
+                    
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Password</label>
+                    <input type="password"
+                           name="password"
+                           class="form-control "
+                           placeholder="Password"
+                           autocomplete="off"/>
+                    
+                </div>
+                <div class="mb-2">
+                    <label class="form-check">
+                        <input name="remember_me" type="checkbox" class="form-check-input" />
+                        <span class="form-check-label">Remember me</span>
+                    </label>
+                </div>
+                <div class="form-footer">
+                    <button type="submit" class="btn btn-primary w-100">Sign in</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+<script type="text/javascript" src="http://localhost:8000/admin/statics/js/vendor/jquery.min.js"></script>
+<script type="text/javascript" src="http://localhost:8000/admin/statics/js/vendor/js.cookie.min.js"></script>
+<script type="text/javascript"
+        src="http://localhost:8000/admin/statics/js/vendor/tabler.min-1.1.0.js"></script>
+
+<script>
+    $(function () {
+        $(".language-switcher-item").each(function () {
+            let el = $(this);
+            el.on("click", function () {
+                Cookies.set(String(el.data("cookie-name")), String(el.data("lang")));
+                window.location.reload();
+            });
+        });
+    });
+</script>
+</body>
+
+</html>

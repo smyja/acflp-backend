@@ -9,6 +9,89 @@ export type Body_login_login_access_token = {
     client_secret?: (string | null);
 };
 
+export type Body_tasks_bulk_import_tasks_from_jsonl = {
+    file: (Blob | File);
+};
+
+export type Body_tasks_flexible_bulk_import_from_jsonl = {
+    file: (Blob | File);
+};
+
+/**
+ * Single task item for bulk import from JSONL
+ */
+export type BulkTaskImportItem = {
+    title: string;
+    description?: (string | null);
+    task_type?: string;
+    source_language: string;
+    target_language?: (string | null);
+    content: string;
+    reward_amount?: (number | string);
+};
+
+/**
+ * Request model for bulk task import
+ */
+export type BulkTaskImportRequest = {
+    tasks: Array<BulkTaskImportItem>;
+    default_reward_amount?: (number | string | null);
+};
+
+/**
+ * Response model for bulk task import
+ */
+export type BulkTaskImportResponse = {
+    success_count: number;
+    error_count: number;
+    total_count: number;
+    errors?: Array<(string)>;
+    created_task_ids?: Array<(string)>;
+    message: string;
+};
+
+/**
+ * Request model for flexible JSONL import with field mapping
+ */
+export type FlexibleBulkImportRequest = {
+    /**
+     * Map JSONL keys to task fields. Required: content_field. Optional: title_field, description_field, source_language_field, target_language_field, task_type_field, reward_amount_field
+     */
+    field_mappings: {
+        [key: string]: (string);
+    };
+    /**
+     * Default values for missing fields
+     */
+    default_values?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Raw JSONL data as list of dictionaries
+     */
+    raw_data: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
+/**
+ * Response model for flexible bulk import
+ */
+export type FlexibleBulkImportResponse = {
+    success_count: number;
+    error_count: number;
+    total_count: number;
+    errors?: Array<(string)>;
+    created_task_ids?: Array<(string)>;
+    message: string;
+    /**
+     * First 3 processed items for verification
+     */
+    sample_processed_data?: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
@@ -35,8 +118,6 @@ export type ItemUpdate = {
     description?: (string | null);
 };
 
-export type Language = 'bini' | 'urhobo' | 'igbo' | 'calabar';
-
 export type Message = {
     message: string;
 };
@@ -53,8 +134,6 @@ export type PrivateUserCreate = {
     is_verified?: boolean;
 };
 
-export type SubmissionStatus = 'pending' | 'approved' | 'rejected';
-
 export type TaskCreate = {
     title: string;
     description?: (string | null);
@@ -63,7 +142,6 @@ export type TaskCreate = {
     target_language?: (string | null);
     content: string;
     reward_amount?: (number | string);
-    max_submissions?: number;
     status?: string;
 };
 
@@ -75,7 +153,6 @@ export type TaskPublic = {
     target_language?: (string | null);
     content: string;
     reward_amount?: string;
-    max_submissions?: number;
     status?: string;
     id: string;
     created_at: string;
@@ -89,13 +166,12 @@ export type TasksPublic = {
     count: number;
 };
 
-export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'rejected';
-
 export type TaskSubmissionCreate = {
-    task_id: string;
     content?: (string | null);
     audio_file_url?: (string | null);
     notes?: (string | null);
+    status?: string;
+    task_id: string;
 };
 
 export type TaskSubmissionPublic = {
@@ -126,14 +202,11 @@ export type TaskSubmissionUpdate = {
     reviewer_notes?: (string | null);
 };
 
-export type TaskType = 'text_translation' | 'tts_recording';
-
 export type TaskUpdate = {
     title?: (string | null);
     description?: (string | null);
     content?: (string | null);
     reward_amount?: (number | string | null);
-    max_submissions?: (number | null);
     status?: (string | null);
 };
 
@@ -180,8 +253,10 @@ export type UserPublic = {
 
 export type UserRegister = {
     email: string;
-    password: string;
+    is_active?: boolean;
+    is_superuser?: boolean;
     full_name?: (string | null);
+    password: string;
 };
 
 export type UsersPublic = {
@@ -281,11 +356,11 @@ export type PrivateCreateUserData = {
 export type PrivateCreateUserResponse = (UserPublic);
 
 export type TasksReadTasksData = {
-    language?: (Language | null);
+    language?: (string | null);
     limit?: number;
     skip?: number;
-    status?: (TaskStatus | null);
-    taskType?: (TaskType | null);
+    status?: (string | null);
+    taskType?: (string | null);
 };
 
 export type TasksReadTasksResponse = (TasksPublic);
@@ -318,7 +393,7 @@ export type TasksDeleteTaskResponse = (Message);
 export type TasksReadTaskSubmissionsData = {
     limit?: number;
     skip?: number;
-    status?: (SubmissionStatus | null);
+    status?: (string | null);
     taskId: string;
 };
 
@@ -353,7 +428,7 @@ export type TasksDeleteTaskSubmissionResponse = (Message);
 export type TasksReadMySubmissionsData = {
     limit?: number;
     skip?: number;
-    status?: (SubmissionStatus | null);
+    status?: (string | null);
 };
 
 export type TasksReadMySubmissionsResponse = (TaskSubmissionsPublic);
@@ -366,6 +441,44 @@ export type TasksReadMyEarningsData = {
 export type TasksReadMyEarningsResponse = (UserEarningsPublic);
 
 export type TasksReadMyStatsResponse = (UserStats);
+
+export type TasksBulkImportTasksData = {
+    requestBody: BulkTaskImportRequest;
+};
+
+export type TasksBulkImportTasksResponse = (BulkTaskImportResponse);
+
+export type TasksBulkImportTasksFromJsonlData = {
+    defaultRewardAmount?: (number | string | null);
+    formData: Body_tasks_bulk_import_tasks_from_jsonl;
+};
+
+export type TasksBulkImportTasksFromJsonlResponse = (BulkTaskImportResponse);
+
+export type TasksFlexibleBulkImportTasksData = {
+    requestBody: FlexibleBulkImportRequest;
+};
+
+export type TasksFlexibleBulkImportTasksResponse = (FlexibleBulkImportResponse);
+
+export type TasksFlexibleBulkImportFromJsonlData = {
+    contentField: string;
+    defaultDescription?: (string | null);
+    defaultRewardAmount?: (number | string | null);
+    defaultSourceLanguage?: string;
+    defaultTargetLanguage?: (string | null);
+    defaultTaskType?: string;
+    defaultTitle?: (string | null);
+    descriptionField?: (string | null);
+    formData: Body_tasks_flexible_bulk_import_from_jsonl;
+    rewardAmountField?: (string | null);
+    sourceLanguageField?: (string | null);
+    targetLanguageField?: (string | null);
+    taskTypeField?: (string | null);
+    titleField?: (string | null);
+};
+
+export type TasksFlexibleBulkImportFromJsonlResponse = (FlexibleBulkImportResponse);
 
 export type UsersReadUsersData = {
     limit?: number;

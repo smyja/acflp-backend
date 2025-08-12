@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, TasksReadTasksData, TasksReadTasksResponse, TasksCreateTaskData, TasksCreateTaskResponse, TasksReadTaskData, TasksReadTaskResponse, TasksUpdateTaskData, TasksUpdateTaskResponse, TasksDeleteTaskData, TasksDeleteTaskResponse, TasksReadTaskSubmissionsData, TasksReadTaskSubmissionsResponse, TasksCreateTaskSubmissionData, TasksCreateTaskSubmissionResponse, TasksReadTaskSubmissionData, TasksReadTaskSubmissionResponse, TasksUpdateTaskSubmissionData, TasksUpdateTaskSubmissionResponse, TasksDeleteTaskSubmissionData, TasksDeleteTaskSubmissionResponse, TasksReadMySubmissionsData, TasksReadMySubmissionsResponse, TasksReadMyEarningsData, TasksReadMyEarningsResponse, TasksReadMyStatsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, TasksReadTasksData, TasksReadTasksResponse, TasksCreateTaskData, TasksCreateTaskResponse, TasksReadTaskData, TasksReadTaskResponse, TasksUpdateTaskData, TasksUpdateTaskResponse, TasksDeleteTaskData, TasksDeleteTaskResponse, TasksReadTaskSubmissionsData, TasksReadTaskSubmissionsResponse, TasksCreateTaskSubmissionData, TasksCreateTaskSubmissionResponse, TasksReadTaskSubmissionData, TasksReadTaskSubmissionResponse, TasksUpdateTaskSubmissionData, TasksUpdateTaskSubmissionResponse, TasksDeleteTaskSubmissionData, TasksDeleteTaskSubmissionResponse, TasksReadMySubmissionsData, TasksReadMySubmissionsResponse, TasksReadMyEarningsData, TasksReadMyEarningsResponse, TasksReadMyStatsResponse, TasksBulkImportTasksData, TasksBulkImportTasksResponse, TasksBulkImportTasksFromJsonlData, TasksBulkImportTasksFromJsonlResponse, TasksFlexibleBulkImportTasksData, TasksFlexibleBulkImportTasksResponse, TasksFlexibleBulkImportFromJsonlData, TasksFlexibleBulkImportFromJsonlResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class ItemsService {
     /**
@@ -532,6 +532,121 @@ export class TasksService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/tasks/my-stats'
+        });
+    }
+    
+    /**
+     * Bulk Import Tasks
+     * Bulk import tasks from a list of task items. Only superusers can import tasks.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns BulkTaskImportResponse Successful Response
+     * @throws ApiError
+     */
+    public static bulkImportTasks(data: TasksBulkImportTasksData): CancelablePromise<TasksBulkImportTasksResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/tasks/bulk-import',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Bulk Import Tasks From Jsonl
+     * Bulk import tasks from a JSONL file. Only superusers can import tasks.
+     * Each line should be a JSON object with task fields.
+     * @param data The data for the request.
+     * @param data.formData
+     * @param data.defaultRewardAmount
+     * @returns BulkTaskImportResponse Successful Response
+     * @throws ApiError
+     */
+    public static bulkImportTasksFromJsonl(data: TasksBulkImportTasksFromJsonlData): CancelablePromise<TasksBulkImportTasksFromJsonlResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/tasks/bulk-import-jsonl',
+            query: {
+                default_reward_amount: data.defaultRewardAmount
+            },
+            formData: data.formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Flexible Bulk Import Tasks
+     * Flexible bulk import from any JSONL format with field mapping.
+     * Allows mapping any JSONL keys to task fields for maximum compatibility.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns FlexibleBulkImportResponse Successful Response
+     * @throws ApiError
+     */
+    public static flexibleBulkImportTasks(data: TasksFlexibleBulkImportTasksData): CancelablePromise<TasksFlexibleBulkImportTasksResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/tasks/flexible-bulk-import',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Flexible Bulk Import From Jsonl
+     * Flexible bulk import from JSONL file with custom field mapping.
+     * Perfect for Hugging Face datasets and other JSONL formats.
+     * @param data The data for the request.
+     * @param data.contentField
+     * @param data.formData
+     * @param data.titleField
+     * @param data.descriptionField
+     * @param data.sourceLanguageField
+     * @param data.targetLanguageField
+     * @param data.taskTypeField
+     * @param data.rewardAmountField
+     * @param data.defaultTitle
+     * @param data.defaultDescription
+     * @param data.defaultSourceLanguage
+     * @param data.defaultTargetLanguage
+     * @param data.defaultTaskType
+     * @param data.defaultRewardAmount
+     * @returns FlexibleBulkImportResponse Successful Response
+     * @throws ApiError
+     */
+    public static flexibleBulkImportFromJsonl(data: TasksFlexibleBulkImportFromJsonlData): CancelablePromise<TasksFlexibleBulkImportFromJsonlResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/tasks/flexible-bulk-import-jsonl',
+            query: {
+                content_field: data.contentField,
+                title_field: data.titleField,
+                description_field: data.descriptionField,
+                source_language_field: data.sourceLanguageField,
+                target_language_field: data.targetLanguageField,
+                task_type_field: data.taskTypeField,
+                reward_amount_field: data.rewardAmountField,
+                default_title: data.defaultTitle,
+                default_description: data.defaultDescription,
+                default_source_language: data.defaultSourceLanguage,
+                default_target_language: data.defaultTargetLanguage,
+                default_task_type: data.defaultTaskType,
+                default_reward_amount: data.defaultRewardAmount
+            },
+            formData: data.formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                422: 'Validation Error'
+            }
         });
     }
     

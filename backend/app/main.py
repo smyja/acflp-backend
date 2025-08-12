@@ -98,7 +98,6 @@ admin = Admin(
     title="ACFLP Admin",
     base_url="/admin",
     auth_provider=AdminAuthProvider(),
-    templates=templates,
 )
 
 # Register admin views with Starlette Admin
