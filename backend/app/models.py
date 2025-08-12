@@ -8,6 +8,31 @@ from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel, Column, DECIMAL
 
 
+# Common field definitions to reduce duplication
+def decimal_field(default_value: str = "0.00") -> Field:
+    """Standard decimal field for monetary amounts"""
+    return Field(sa_column=Column(DECIMAL(10, 2)), default=Decimal(default_value))
+
+
+def status_field(default_status: str = "pending") -> Field:
+    """Standard status field with VARCHAR column"""
+    return Field(
+        sa_column=Column("status", sa.String(50), nullable=False, server_default=default_status),
+        default=default_status
+    )
+
+
+def language_field(column_name: str, nullable: bool = False, default_value=None):
+    """Standard language field with VARCHAR column"""
+    if nullable:
+        return Field(
+            sa_column=Column(column_name, sa.String(50), nullable=True),
+            default=default_value
+        )
+    else:
+        return Field(sa_column=Column(column_name, sa.String(50), nullable=False))
+
+
 # Shared properties
 class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True, max_length=255)
@@ -21,10 +46,9 @@ class UserCreate(UserBase):
     password: str = Field(min_length=8, max_length=40)
 
 
-class UserRegister(SQLModel):
-    email: EmailStr = Field(max_length=255)
-    password: str = Field(min_length=8, max_length=40)
-    full_name: str | None = Field(default=None, max_length=255)
+# UserRegister inherits from UserCreate to reduce duplication
+class UserRegister(UserCreate):
+    pass
 
 
 # Properties to receive via API on update, all are optional
@@ -47,9 +71,7 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
-    total_earnings: Decimal = Field(
-        sa_column=Column(DECIMAL(10, 2)), default=Decimal("0.00")
-    )
+    total_earnings: Decimal = decimal_field()
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
     created_tasks: list["Task"] = Relationship(
         back_populates="created_by",
@@ -166,10 +188,7 @@ class TaskBase(SQLModel):
     source_language: str
     target_language: str | None = Field(default=None)  # For translation tasks
     content: str = Field(max_length=5000)  # Text to translate or TTS script
-    reward_amount: Decimal = Field(
-        sa_column=Column(DECIMAL(10, 2)), default=Decimal("0.00")
-    )
-    max_submissions: int = Field(default=1)
+    reward_amount: Decimal = decimal_field()
     status: str = Field(default="pending")
 
 
@@ -181,10 +200,7 @@ class TaskUpdate(SQLModel):
     title: str | None = Field(default=None, max_length=255)
     description: str | None = Field(default=None, max_length=1000)
     content: str | None = Field(default=None, max_length=5000)
-    reward_amount: Decimal | None = Field(
-        default=None, sa_column=Column(DECIMAL(10, 2))
-    )
-    max_submissions: int | None = Field(default=None)
+    reward_amount: Decimal | None = None
     status: str | None = Field(default=None)
 
 
@@ -197,9 +213,9 @@ class Task(TaskBase, table=True):
     
     # Override enum fields to use VARCHAR to prevent PostgreSQL enum creation
     task_type: str = Field(sa_column=Column("task_type", sa.String(50), nullable=False))
-    source_language: str = Field(sa_column=Column("source_language", sa.String(50), nullable=False))
-    target_language: str | None = Field(sa_column=Column("target_language", sa.String(50), nullable=True), default=None)
-    status: str = Field(sa_column=Column("status", sa.String(50), nullable=False, server_default="pending"), default="pending")
+    source_language: str = language_field("source_language")
+    target_language: str | None = language_field("target_language", nullable=True, default_value=None)
+    status: str = status_field()
 
     # Relationships
     created_by: User | None = Relationship(
@@ -236,11 +252,8 @@ class TaskSubmissionBase(SQLModel):
     status: str = Field(default="pending")
 
 
-class TaskSubmissionCreate(SQLModel):
+class TaskSubmissionCreate(TaskSubmissionBase):
     task_id: uuid.UUID
-    content: str | None = Field(default=None, max_length=5000)
-    audio_file_url: str | None = Field(default=None, max_length=500)
-    notes: str | None = Field(default=None, max_length=1000)
 
 
 class TaskSubmissionUpdate(SQLModel):
@@ -263,7 +276,7 @@ class TaskSubmission(TaskSubmissionBase, table=True):
     reviewer_notes: str | None = Field(default=None, max_length=1000)
     
     # Override enum field to use VARCHAR to prevent PostgreSQL enum creation
-    status: str = Field(sa_column=Column("status", sa.String(50), nullable=False, server_default="pending"), default="pending")
+    status: str = status_field()
 
     # Relationships
     task: Task | None = Relationship(back_populates="submissions")
@@ -342,3 +355,56 @@ class UserStats(SQLModel):
     approved_submissions: int
     pending_submissions: int
     rejected_submissions: int
+
+
+# Bulk Task Import Models
+class BulkTaskImportItem(SQLModel):
+    """Single task item for bulk import from JSONL"""
+    title: str = Field(max_length=255)
+    description: str | None = Field(default=None, max_length=1000)
+    task_type: str = Field(default="text_translation")
+    source_language: str
+    target_language: str | None = Field(default=None)
+    content: str = Field(max_length=5000)
+    reward_amount: Decimal = Field(default=Decimal("0.00"))
+
+
+class BulkTaskImportRequest(SQLModel):
+    """Request model for bulk task import"""
+    tasks: list[BulkTaskImportItem]
+    default_reward_amount: Decimal | None = Field(default=None)
+
+
+class FlexibleBulkImportRequest(SQLModel):
+    """Request model for flexible JSONL import with field mapping"""
+    field_mappings: dict[str, str] = Field(
+        description="Map JSONL keys to task fields. Required: content_field. Optional: title_field, description_field, source_language_field, target_language_field, task_type_field, reward_amount_field"
+    )
+    default_values: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Default values for missing fields"
+    )
+    raw_data: list[dict[str, Any]] = Field(
+        description="Raw JSONL data as list of dictionaries"
+    )
+
+
+class FlexibleBulkImportResponse(SQLModel):
+    """Response model for flexible bulk import"""
+    success_count: int
+    error_count: int
+    total_count: int
+    errors: list[str] = Field(default_factory=list)
+    created_task_ids: list[uuid.UUID] = Field(default_factory=list)
+    message: str
+    sample_processed_data: list[dict[str, Any]] = Field(default_factory=list, description="First 3 processed items for verification")
+
+
+class BulkTaskImportResponse(SQLModel):
+    """Response model for bulk task import"""
+    success_count: int
+    error_count: int
+    total_count: int
+    errors: list[str] = Field(default_factory=list)
+    created_task_ids: list[uuid.UUID] = Field(default_factory=list)
+    message: str

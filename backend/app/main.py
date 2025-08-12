@@ -8,11 +8,13 @@ from starlette.responses import RedirectResponse
 from starlette_admin.contrib.sqlmodel import Admin, ModelView
 from starlette_admin.auth import AdminConfig, AdminUser, AuthProvider
 from starlette_admin.exceptions import FormValidationError, LoginFailed
+from starlette.templating import Jinja2Templates
 
 from app.api.main import api_router
 from app.core.config import settings
 from app.core.db import engine
 from app.models import User, Item, Task, TaskSubmission, UserEarning
+from app.admin import BulkTaskImportView, FlexibleBulkImportView
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -53,25 +55,42 @@ class AdminAuthProvider(AuthProvider):
         request: Request,
         response: RedirectResponse,
     ) -> RedirectResponse:
-        # Simple check - in production, use proper password hashing
-        if username == "admin" and password == "admin":
-            request.session.update({"token": "authenticated"})
-            return response
-        raise LoginFailed("Invalid username or password")
+        from sqlmodel import Session, select
+        from app.core.security import verify_password
+        
+        # Authenticate against the actual user database
+        with Session(engine) as session:
+            user = session.exec(
+                select(User).where(User.email == username)
+            ).first()
+            
+            if user and user.is_superuser and verify_password(password, user.hashed_password):
+                request.session.update({
+                    "admin_user": username,
+                    "admin_user_id": str(user.id),
+                    "admin_user_name": user.full_name or username
+                })
+            else:
+                raise LoginFailed("Invalid credentials or insufficient permissions")
+        return response
 
     async def is_authenticated(self, request: Request) -> bool:
-        token = request.session.get("token")
-        return token == "authenticated"
+        return request.session.get("admin_user") is not None
 
     def get_admin_config(self, request: Request) -> AdminConfig:
         return AdminConfig(app_title="ACFLP Admin")
 
     def get_admin_user(self, request: Request) -> AdminUser:
-        return AdminUser(username="admin")
+        username = request.session.get("admin_user", "admin")
+        display_name = request.session.get("admin_user_name", username)
+        return AdminUser(username=display_name)
 
     async def logout(self, request: Request, response: RedirectResponse) -> RedirectResponse:
         request.session.clear()
         return response
+
+# Configure templates for custom admin views
+templates = Jinja2Templates(directory="app/templates")
 
 # Starlette Admin - Django-like automatic admin interface
 admin = Admin(
@@ -79,6 +98,7 @@ admin = Admin(
     title="ACFLP Admin",
     base_url="/admin",
     auth_provider=AdminAuthProvider(),
+    templates=templates,
 )
 
 # Register admin views with Starlette Admin
@@ -87,6 +107,15 @@ admin.add_view(ModelView(Item, icon="fa fa-box"))
 admin.add_view(ModelView(Task, icon="fa fa-tasks"))
 admin.add_view(ModelView(TaskSubmission, icon="fa fa-file-text"))
 admin.add_view(ModelView(UserEarning, icon="fa fa-money"))
+
+# Add custom bulk import views
+bulk_import_view = BulkTaskImportView()
+bulk_import_view.templates = templates
+admin.add_view(bulk_import_view)
+
+flexible_import_view = FlexibleBulkImportView()
+flexible_import_view.templates = templates
+admin.add_view(flexible_import_view)
 
 # Mount admin to FastAPI app
 admin.mount_to(app)

@@ -1,0 +1,293 @@
+{% extends "layout.html" %}
+
+{% block title %}Flexible JSONL Import{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fa fa-magic"></i>
+                        Flexible JSONL Import
+                    </h3>
+                    <p class="card-text">Perfect for Hugging Face datasets and any JSONL format</p>
+                </div>
+                <div class="card-body">
+                    {% if success_message %}
+                    <div class="alert alert-success alert-dismissible">
+                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                        <h5><i class="icon fa fa-check"></i> Success!</h5>
+                        {{ success_message }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if error_message %}
+                    <div class="alert alert-danger alert-dismissible">
+                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                        <h5><i class="icon fa fa-ban"></i> Error!</h5>
+                        {{ error_message }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if import_results %}
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info"><i class="fa fa-tasks"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Import Summary</span>
+                                    <span class="info-box-number">{{ import_results.success_count }}/{{ import_results.total_count }} tasks imported</span>
+                                    {% if import_results.error_count > 0 %}
+                                    <span class="progress-description">{{ import_results.error_count }} errors occurred</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if import_results.sample_processed_data %}
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card card-info">
+                                <div class="card-header">
+                                    <h3 class="card-title">Sample Processed Data</h3>
+                                </div>
+                                <div class="card-body">
+                                    {% for sample in import_results.sample_processed_data %}
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <h6>Original JSONL:</h6>
+                                            <pre class="bg-light p-2"><code>{{ sample.original | tojson }}</code></pre>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6>Mapped Task Data:</h6>
+                                            <pre class="bg-success p-2 text-white"><code>{{ sample.mapped | tojson }}</code></pre>
+                                        </div>
+                                    </div>
+                                    {% if not loop.last %}<hr>{% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if import_results.errors %}
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card card-warning">
+                                <div class="card-header">
+                                    <h3 class="card-title">Import Errors</h3>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled">
+                                        {% for error in import_results.errors %}
+                                        <li><i class="fa fa-exclamation-triangle text-warning"></i> {{ error }}</li>
+                                        {% endfor %}
+                                        {% if import_results.error_count > import_results.errors|length %}
+                                        <li><i class="fa fa-ellipsis-h"></i> ... and {{ import_results.error_count - import_results.errors|length }} more errors</li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                    
+                    <form method="post" enctype="multipart/form-data" id="flexibleImportForm">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="jsonl_file">JSONL File</label>
+                                    <input type="file" class="form-control-file" id="jsonl_file" name="jsonl_file" accept=".jsonl,.json" required>
+                                    <small class="form-text text-muted">
+                                        Upload any JSONL file (Hugging Face datasets, custom formats, etc.)
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h5>Field Mapping <small class="text-muted">(Map your JSONL keys to task fields)</small></h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="content_field">Content Field <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="content_field" name="content_field" placeholder="e.g., text, content, sentence" required>
+                                            <small class="form-text text-muted">JSONL key containing text to translate</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="title_field">Title Field</label>
+                                            <input type="text" class="form-control" id="title_field" name="title_field" placeholder="e.g., title, name, id">
+                                            <small class="form-text text-muted">Optional: JSONL key for task title</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="source_language_field">Source Language Field</label>
+                                            <input type="text" class="form-control" id="source_language_field" name="source_language_field" placeholder="e.g., source_lang, from_lang">
+                                            <small class="form-text text-muted">Optional: JSONL key for source language</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="target_language_field">Target Language Field</label>
+                                            <input type="text" class="form-control" id="target_language_field" name="target_language_field" placeholder="e.g., target_lang, to_lang">
+                                            <small class="form-text text-muted">Optional: JSONL key for target language</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="description_field">Description Field</label>
+                                            <input type="text" class="form-control" id="description_field" name="description_field" placeholder="e.g., description, notes">
+                                            <small class="form-text text-muted">Optional: JSONL key for task description</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="reward_amount_field">Reward Amount Field</label>
+                                            <input type="text" class="form-control" id="reward_amount_field" name="reward_amount_field" placeholder="e.g., reward, amount, price">
+                                            <small class="form-text text-muted">Optional: JSONL key for reward amount</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h5>Default Values <small class="text-muted">(Applied when fields are missing)</small></h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="default_source_language">Default Source Language</label>
+                                            <input type="text" class="form-control" id="default_source_language" name="default_source_language" value="english" placeholder="e.g., english, spanish">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="default_target_language">Default Target Language</label>
+                                            <input type="text" class="form-control" id="default_target_language" name="default_target_language" placeholder="e.g., bini, urhobo">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="default_task_type">Default Task Type</label>
+                                            <input type="text" class="form-control" id="default_task_type" name="default_task_type" value="text_translation">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="default_reward_amount">Default Reward Amount</label>
+                                            <input type="number" step="0.01" class="form-control" id="default_reward_amount" name="default_reward_amount" placeholder="0.00">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fa fa-magic"></i> Import with Field Mapping
+                                </button>
+                                <a href="/admin/task/list" class="btn btn-secondary ml-2">
+                                    <i class="fa fa-list"></i> View Tasks
+                                </a>
+                                <a href="/admin/bulk-task-import" class="btn btn-info ml-2">
+                                    <i class="fa fa-upload"></i> Standard Import
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h5>Hugging Face Dataset Example:</h5>
+                            <pre class="bg-light p-3"><code>{"translation": {"en": "Hello, how are you?", "bini": ""}, "id": "001"}
+{"translation": {"en": "Goodbye, see you later", "bini": ""}, "id": "002"}</code></pre>
+                            
+                            <p><strong>Field Mapping for above:</strong></p>
+                            <ul>
+                                <li><strong>Content Field:</strong> translation.en</li>
+                                <li><strong>Title Field:</strong> id</li>
+                                <li><strong>Default Source Language:</strong> english</li>
+                                <li><strong>Default Target Language:</strong> bini</li>
+                            </ul>
+                            
+                            <h5 class="mt-4">Custom Dataset Example:</h5>
+                            <pre class="bg-light p-3"><code>{"text": "What is your name?", "source": "en", "target": "ig", "category": "question"}
+{"text": "I would like some food", "source": "en", "target": "yo", "category": "request"}</code></pre>
+                            
+                            <p><strong>Field Mapping for above:</strong></p>
+                            <ul>
+                                <li><strong>Content Field:</strong> text</li>
+                                <li><strong>Source Language Field:</strong> source</li>
+                                <li><strong>Target Language Field:</strong> target</li>
+                                <li><strong>Description Field:</strong> category</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Auto-dismiss alerts after 10 seconds
+    setTimeout(function() {
+        $('.alert').fadeOut('slow');
+    }, 10000);
+    
+    // File input validation
+    $('#jsonl_file').on('change', function() {
+        var fileName = $(this).val().split('\\').pop();
+        var fileExt = fileName.split('.').pop().toLowerCase();
+        
+        if (fileExt !== 'jsonl' && fileExt !== 'json') {
+            alert('Please select a JSONL (.jsonl) or JSON (.json) file.');
+            $(this).val('');
+        }
+    });
+    
+    // Form validation
+    $('#flexibleImportForm').on('submit', function(e) {
+        var contentField = $('#content_field').val().trim();
+        if (!contentField) {
+            e.preventDefault();
+            alert('Content Field is required!');
+            $('#content_field').focus();
+            return false;
+        }
+    });
+    
+    // Add helpful tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+});
+</script>
+{% endblock %}

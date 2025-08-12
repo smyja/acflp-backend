@@ -1,0 +1,5 @@
+{"title": "Translate greeting", "source_language": "english", "target_language": "bini", "content": "Hello, how are you?", "description": "Simple greeting translation", "task_type": "text_translation", "reward_amount": 5.00}
+{"title": "Translate farewell", "source_language": "english", "target_language": "urhobo", "content": "Goodbye, see you later", "description": "Farewell translation", "task_type": "text_translation", "reward_amount": 4.50}
+{"title": "Translate question", "source_language": "english", "target_language": "igbo", "content": "What is your name?", "description": "Basic question translation", "task_type": "text_translation", "reward_amount": 3.75}
+{"title": "Translate food item", "source_language": "english", "target_language": "calabar", "content": "I would like some rice and beans", "description": "Food-related translation", "task_type": "text_translation", "reward_amount": 6.00}
+{"title": "Translate time expression", "source_language": "english", "target_language": "bini", "content": "What time is it?", "description": "Time-related question", "task_type": "text_translation", "reward_amount": 4.25}
