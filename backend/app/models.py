@@ -1,7 +1,11 @@
 import uuid
+from datetime import datetime
+from enum import Enum
+from decimal import Decimal
 
+import sqlalchemy as sa
 from pydantic import EmailStr
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship, SQLModel, Column, DECIMAL
 
 
 # Shared properties
@@ -43,7 +47,22 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
+    total_earnings: Decimal = Field(
+        sa_column=Column(DECIMAL(10, 2)), default=Decimal("0.00")
+    )
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
+    created_tasks: list["Task"] = Relationship(
+        back_populates="created_by",
+        cascade_delete=True,
+    )
+    task_submissions: list["TaskSubmission"] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={
+            "foreign_keys": "[TaskSubmission.user_id]",
+        },
+        cascade_delete=True,
+    )
+    earnings: list["UserEarning"] = Relationship(cascade_delete=True)
 
 
 # Properties to return via API, id is always required
@@ -111,3 +130,215 @@ class TokenPayload(SQLModel):
 class NewPassword(SQLModel):
     token: str
     new_password: str = Field(min_length=8, max_length=40)
+
+
+# Task System Models
+class TaskType(str, Enum):
+    TEXT_TRANSLATION = "text_translation"
+    TTS_RECORDING = "tts_recording"
+
+
+class Language(str, Enum):
+    BINI = "bini"
+    URHOBO = "urhobo"
+    IGBO = "igbo"
+    CALABAR = "calabar"
+
+
+class TaskStatus(str, Enum):
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    REJECTED = "rejected"
+
+
+class SubmissionStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+# Task Base Models
+class TaskBase(SQLModel):
+    title: str = Field(max_length=255)
+    description: str | None = Field(default=None, max_length=1000)
+    task_type: str
+    source_language: str
+    target_language: str | None = Field(default=None)  # For translation tasks
+    content: str = Field(max_length=5000)  # Text to translate or TTS script
+    reward_amount: Decimal = Field(
+        sa_column=Column(DECIMAL(10, 2)), default=Decimal("0.00")
+    )
+    max_submissions: int = Field(default=1)
+    status: str = Field(default="pending")
+
+
+class TaskCreate(TaskBase):
+    pass
+
+
+class TaskUpdate(SQLModel):
+    title: str | None = Field(default=None, max_length=255)
+    description: str | None = Field(default=None, max_length=1000)
+    content: str | None = Field(default=None, max_length=5000)
+    reward_amount: Decimal | None = Field(
+        default=None, sa_column=Column(DECIMAL(10, 2))
+    )
+    max_submissions: int | None = Field(default=None)
+    status: str | None = Field(default=None)
+
+
+# Database model for Task
+class Task(TaskBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_by_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
+    
+    # Override enum fields to use VARCHAR to prevent PostgreSQL enum creation
+    task_type: str = Field(sa_column=Column("task_type", sa.String(50), nullable=False))
+    source_language: str = Field(sa_column=Column("source_language", sa.String(50), nullable=False))
+    target_language: str | None = Field(sa_column=Column("target_language", sa.String(50), nullable=True), default=None)
+    status: str = Field(sa_column=Column("status", sa.String(50), nullable=False, server_default="pending"), default="pending")
+
+    # Relationships
+    created_by: User | None = Relationship(
+        back_populates="created_tasks",
+        sa_relationship_kwargs={
+            "foreign_keys": "[Task.created_by_id]",
+        },
+    )
+    submissions: list["TaskSubmission"] = Relationship(
+        back_populates="task", cascade_delete=True
+    )
+
+
+class TaskPublic(TaskBase):
+    id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+    created_by_id: uuid.UUID
+    submission_count: int = 0
+
+
+class TasksPublic(SQLModel):
+    data: list[TaskPublic]
+    count: int
+
+
+# Task Submission Models
+class TaskSubmissionBase(SQLModel):
+    content: str | None = Field(default=None, max_length=5000)  # Translation text
+    audio_file_url: str | None = Field(
+        default=None, max_length=500
+    )  # TTS recording URL
+    notes: str | None = Field(default=None, max_length=1000)
+    status: str = Field(default="pending")
+
+
+class TaskSubmissionCreate(SQLModel):
+    task_id: uuid.UUID
+    content: str | None = Field(default=None, max_length=5000)
+    audio_file_url: str | None = Field(default=None, max_length=500)
+    notes: str | None = Field(default=None, max_length=1000)
+
+
+class TaskSubmissionUpdate(SQLModel):
+    content: str | None = Field(default=None, max_length=5000)
+    audio_file_url: str | None = Field(default=None, max_length=500)
+    notes: str | None = Field(default=None, max_length=1000)
+    status: str | None = Field(default=None)
+    reviewer_notes: str | None = Field(default=None, max_length=1000)
+
+
+# Database model for TaskSubmission
+class TaskSubmission(TaskSubmissionBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    task_id: uuid.UUID = Field(foreign_key="task.id", nullable=False)
+    user_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    reviewed_at: datetime | None = Field(default=None)
+    reviewer_id: uuid.UUID | None = Field(foreign_key="user.id", nullable=True)
+    reviewer_notes: str | None = Field(default=None, max_length=1000)
+    
+    # Override enum field to use VARCHAR to prevent PostgreSQL enum creation
+    status: str = Field(sa_column=Column("status", sa.String(50), nullable=False, server_default="pending"), default="pending")
+
+    # Relationships
+    task: Task | None = Relationship(back_populates="submissions")
+    user: User | None = Relationship(
+        back_populates="task_submissions",
+        sa_relationship_kwargs={
+            "foreign_keys": "[TaskSubmission.user_id]",
+        },
+    )
+    reviewer: User | None = Relationship(
+        sa_relationship_kwargs={
+            "foreign_keys": "[TaskSubmission.reviewer_id]",
+        },
+    )
+    earnings: list["UserEarning"] = Relationship(
+        back_populates="submission", cascade_delete=True
+    )
+
+
+class TaskSubmissionPublic(TaskSubmissionBase):
+    id: uuid.UUID
+    task_id: uuid.UUID
+    user_id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+    reviewed_at: datetime | None
+    reviewer_id: uuid.UUID | None
+    reviewer_notes: str | None
+
+
+class TaskSubmissionsPublic(SQLModel):
+    data: list[TaskSubmissionPublic]
+    count: int
+
+
+# User Earnings Models
+class UserEarningBase(SQLModel):
+    amount: Decimal = Field(sa_column=Column(DECIMAL(10, 2)))
+    description: str = Field(max_length=255)
+
+
+class UserEarningCreate(UserEarningBase):
+    user_id: uuid.UUID
+    submission_id: uuid.UUID
+
+
+# Database model for UserEarning
+class UserEarning(UserEarningBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
+    submission_id: uuid.UUID = Field(foreign_key="tasksubmission.id", nullable=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Relationships
+    user: User | None = Relationship()
+    submission: TaskSubmission | None = Relationship(back_populates="earnings")
+
+
+class UserEarningPublic(UserEarningBase):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    submission_id: uuid.UUID
+    created_at: datetime
+
+
+class UserEarningsPublic(SQLModel):
+    data: list[UserEarningPublic]
+    count: int
+    total_earnings: Decimal
+
+
+# User Statistics
+class UserStats(SQLModel):
+    total_earnings: Decimal
+    total_submissions: int
+    approved_submissions: int
+    pending_submissions: int
+    rejected_submissions: int
