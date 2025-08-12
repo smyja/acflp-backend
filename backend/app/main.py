@@ -45,6 +45,7 @@ app.add_middleware(SessionMiddleware, secret_key="your-secret-key")
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
+
 # Starlette Admin Authentication Provider
 class AdminAuthProvider(AuthProvider):
     async def login(
@@ -57,19 +58,23 @@ class AdminAuthProvider(AuthProvider):
     ) -> RedirectResponse:
         from sqlmodel import Session, select
         from app.core.security import verify_password
-        
+
         # Authenticate against the actual user database
         with Session(engine) as session:
-            user = session.exec(
-                select(User).where(User.email == username)
-            ).first()
-            
-            if user and user.is_superuser and verify_password(password, user.hashed_password):
-                request.session.update({
-                    "admin_user": username,
-                    "admin_user_id": str(user.id),
-                    "admin_user_name": user.full_name or username
-                })
+            user = session.exec(select(User).where(User.email == username)).first()
+
+            if (
+                user
+                and user.is_superuser
+                and verify_password(password, user.hashed_password)
+            ):
+                request.session.update(
+                    {
+                        "admin_user": username,
+                        "admin_user_id": str(user.id),
+                        "admin_user_name": user.full_name or username,
+                    }
+                )
             else:
                 raise LoginFailed("Invalid credentials or insufficient permissions")
         return response
@@ -85,14 +90,18 @@ class AdminAuthProvider(AuthProvider):
         display_name = request.session.get("admin_user_name", username)
         return AdminUser(username=display_name)
 
-    async def logout(self, request: Request, response: RedirectResponse) -> RedirectResponse:
+    async def logout(
+        self, request: Request, response: RedirectResponse
+    ) -> RedirectResponse:
         request.session.clear()
         return response
+
 
 # Configure templates for custom admin views
 templates = Jinja2Templates(directory="app/templates")
 
-# Starlette Admin - Django-like automatic admin interface
+
+
 admin = Admin(
     engine,
     title="ACFLP Admin",
@@ -100,21 +109,15 @@ admin = Admin(
     auth_provider=AdminAuthProvider(),
 )
 
-# Register admin views with Starlette Admin
+# your ModelView registrations...
 admin.add_view(ModelView(User, icon="fa fa-users"))
 admin.add_view(ModelView(Item, icon="fa fa-box"))
 admin.add_view(ModelView(Task, icon="fa fa-tasks"))
 admin.add_view(ModelView(TaskSubmission, icon="fa fa-file-text"))
-admin.add_view(ModelView(UserEarning, icon="fa fa-money"))
+admin.add_view(ModelView(UserEarning, icon="fa fa-dollar-sign"))
 
-# Add custom bulk import views
-bulk_import_view = BulkTaskImportView()
-bulk_import_view.templates = templates
-admin.add_view(bulk_import_view)
+# add the custom pages as CustomView instances
+admin.add_view(BulkTaskImportView(templates))
+admin.add_view(FlexibleBulkImportView(templates))
 
-flexible_import_view = FlexibleBulkImportView()
-flexible_import_view.templates = templates
-admin.add_view(flexible_import_view)
-
-# Mount admin to FastAPI app
 admin.mount_to(app)

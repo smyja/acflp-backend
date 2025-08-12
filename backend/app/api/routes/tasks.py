@@ -38,6 +38,28 @@ from app.models import (
     FlexibleBulkImportResponse,
 )
 
+
+def get_nested_value(data: dict, key: str) -> Any:
+    """Get value from nested dictionary using dot notation (e.g., 'translation.en')"""
+    if '.' not in key:
+        return data.get(key)
+    
+    keys = key.split('.')
+    current = data
+    
+    for k in keys:
+        if isinstance(current, dict) and k in current:
+            current = current[k]
+        else:
+            return None
+    
+    return current
+
+
+def has_nested_key(data: dict, key: str) -> bool:
+    """Check if nested key exists using dot notation"""
+    return get_nested_value(data, key) is not None
+
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
@@ -662,9 +684,15 @@ def flexible_bulk_import_tasks(
             
             # Required field: content
             content_key = request.field_mappings["content_field"]
-            if content_key not in raw_item:
+            print(f"DEBUG: Processing item {i+1}: {raw_item}")
+            print(f"DEBUG: Looking for content_key: '{content_key}'")
+            print(f"DEBUG: has_nested_key result: {has_nested_key(raw_item, content_key)}")
+            if not has_nested_key(raw_item, content_key):
+                print(f"DEBUG: Field '{content_key}' not found in {raw_item}")
                 raise ValueError(f"Required field '{content_key}' not found")
-            mapped_data["content"] = str(raw_item[content_key])
+            content_value = get_nested_value(raw_item, content_key)
+            print(f"DEBUG: content_value: {content_value}")
+            mapped_data["content"] = str(content_value)
             
             # Optional fields with mappings
             field_map = {
@@ -679,8 +707,8 @@ def flexible_bulk_import_tasks(
             for mapping_key, task_field in field_map.items():
                 if mapping_key in request.field_mappings:
                     jsonl_key = request.field_mappings[mapping_key]
-                    if jsonl_key in raw_item:
-                        value = raw_item[jsonl_key]
+                    if has_nested_key(raw_item, jsonl_key):
+                        value = get_nested_value(raw_item, jsonl_key)
                         if task_field == "reward_amount" and value is not None:
                             mapped_data[task_field] = Decimal(str(value))
                         else:

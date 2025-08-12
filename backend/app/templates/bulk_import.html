@@ -1,179 +1,23 @@
-{% extends "layout.html" %}
-
-{% block title %}Bulk Task Import{% endblock %}
-
+{% extends "base.html" %}
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fa fa-upload"></i>
-                        Bulk Task Import
-                    </h3>
-                </div>
-                <div class="card-body">
-                    {% if success_message %}
-                    <div class="alert alert-success alert-dismissible">
-                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                        <h5><i class="icon fa fa-check"></i> Success!</h5>
-                        {{ success_message }}
-                    </div>
-                    {% endif %}
-                    
-                    {% if error_message %}
-                    <div class="alert alert-danger alert-dismissible">
-                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                        <h5><i class="icon fa fa-ban"></i> Error!</h5>
-                        {{ error_message }}
-                    </div>
-                    {% endif %}
-                    
-                    {% if import_results %}
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="info-box">
-                                <span class="info-box-icon bg-info"><i class="fa fa-tasks"></i></span>
-                                <div class="info-box-content">
-                                    <span class="info-box-text">Import Summary</span>
-                                    <span class="info-box-number">{{ import_results.success_count }}/{{ import_results.total_count }} tasks imported</span>
-                                    {% if import_results.error_count > 0 %}
-                                    <span class="progress-description">{{ import_results.error_count }} errors occurred</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    {% if import_results.errors %}
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="card card-warning">
-                                <div class="card-header">
-                                    <h3 class="card-title">Import Errors</h3>
-                                </div>
-                                <div class="card-body">
-                                    <ul class="list-unstyled">
-                                        {% for error in import_results.errors %}
-                                        <li><i class="fa fa-exclamation-triangle text-warning"></i> {{ error }}</li>
-                                        {% endfor %}
-                                        {% if import_results.error_count > import_results.errors|length %}
-                                        <li><i class="fa fa-ellipsis-h"></i> ... and {{ import_results.error_count - import_results.errors|length }} more errors</li>
-                                        {% endif %}
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                    
-                    {% if import_results.created_task_ids %}
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="card card-success">
-                                <div class="card-header">
-                                    <h3 class="card-title">Successfully Created Tasks (Sample)</h3>
-                                </div>
-                                <div class="card-body">
-                                    <ul class="list-unstyled">
-                                        {% for task_id in import_results.created_task_ids %}
-                                        <li><i class="fa fa-check text-success"></i> Task ID: {{ task_id }}</li>
-                                        {% endfor %}
-                                        {% if import_results.success_count > import_results.created_task_ids|length %}
-                                        <li><i class="fa fa-ellipsis-h"></i> ... and {{ import_results.success_count - import_results.created_task_ids|length }} more tasks</li>
-                                        {% endif %}
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% endif %}
-                    
-                    <form method="post" enctype="multipart/form-data">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="jsonl_file">JSONL File</label>
-                                    <input type="file" class="form-control-file" id="jsonl_file" name="jsonl_file" accept=".jsonl,.json" required>
-                                    <small class="form-text text-muted">
-                                        Upload a JSONL file where each line contains a JSON object with task data.
-                                        Required fields: title, source_language, content.
-                        Optional fields: description, task_type, target_language, reward_amount.
-                                    </small>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="default_reward_amount">Default Reward Amount</label>
-                                    <input type="number" step="0.01" class="form-control" id="default_reward_amount" name="default_reward_amount" placeholder="0.00">
-                                    <small class="form-text text-muted">Applied to tasks with 0.00 reward amount</small>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-12">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fa fa-upload"></i> Import Tasks
-                                </button>
-                                <a href="/admin/task/list" class="btn btn-secondary ml-2">
-                                    <i class="fa fa-list"></i> View Tasks
-                                </a>
-                            </div>
-                        </div>
-                    </form>
-                    
-                    <hr>
-                    
-                    <div class="row">
-                        <div class="col-md-12">
-                            <h5>JSONL Format Example:</h5>
-                            <pre class="bg-light p-3"><code>{"title": "Translate greeting", "source_language": "english", "target_language": "bini", "content": "Hello, how are you?", "description": "Simple greeting translation", "task_type": "text_translation", "reward_amount": 5.00}
-{"title": "Translate farewell", "source_language": "english", "target_language": "urhobo", "content": "Goodbye, see you later", "description": "Farewell translation", "task_type": "text_translation", "reward_amount": 4.50}</code></pre>
-                            
-                            <h6>Required Fields:</h6>
-                            <ul>
-                                <li><strong>title</strong>: Task title (max 255 characters)</li>
-                                <li><strong>source_language</strong>: Source language for translation</li>
-                                <li><strong>content</strong>: Text content to be translated (max 5000 characters)</li>
-                            </ul>
-                            
-                            <h6>Optional Fields:</h6>
-                            <ul>
-                                <li><strong>description</strong>: Task description (max 1000 characters)</li>
-                                <li><strong>task_type</strong>: Type of task (default: "text_translation")</li>
-                                <li><strong>target_language</strong>: Target language for translation</li>
-                                <li><strong>reward_amount</strong>: Reward amount in decimal format (default: 0.00)</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
+  <h2>Bulk Task Import</h2>
+  {% if error_message %}<div class="alert alert-danger">{{ error_message }}</div>{% endif %}
+  {% if success_message %}<div class="alert alert-success">{{ success_message }}</div>{% endif %}
 
-{% block extra_js %}
-<script>
-$(document).ready(function() {
-    // Auto-dismiss alerts after 10 seconds
-    setTimeout(function() {
-        $('.alert').fadeOut('slow');
-    }, 10000);
-    
-    // File input validation
-    $('#jsonl_file').on('change', function() {
-        var fileName = $(this).val().split('\\').pop();
-        var fileExt = fileName.split('.').pop().toLowerCase();
-        
-        if (fileExt !== 'jsonl' && fileExt !== 'json') {
-            alert('Please select a JSONL (.jsonl) or JSON (.json) file.');
-            $(this).val('');
-        }
-    });
-});
-</script>
+  <form method="post" enctype="multipart/form-data">
+    <div class="mb-3">
+      <label class="form-label">JSONL or JSON file</label>
+      <input class="form-control" type="file" name="jsonl_file" accept=".jsonl,.json,application/x-ndjson" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Default reward amount</label>
+      <input class="form-control" type="number" step="0.01" name="default_reward_amount" placeholder="eg 0.50">
+    </div>
+    <button class="btn btn-success" type="submit">Import</button>
+  </form>
+
+  {% if import_results %}
+    <hr>
+    <pre>{{ import_results | tojson(indent=2) }}</pre>
+  {% endif %}
 {% endblock %}

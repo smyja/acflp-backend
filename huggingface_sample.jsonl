@@ -1,5 +1,5 @@
-{"translation": {"en": "Hello, how are you?", "bini": ""}, "id": "greeting_001", "category": "greetings"}
-{"translation": {"en": "What is your name?", "igbo": ""}, "id": "question_001", "category": "questions"}
-{"translation": {"en": "I would like some food", "urhobo": ""}, "id": "request_001", "category": "requests"}
-{"translation": {"en": "Thank you very much", "calabar": ""}, "id": "gratitude_001", "category": "gratitude"}
-{"translation": {"en": "Where is the market?", "bini": ""}, "id": "location_001", "category": "directions"}
+{"translation": {"ffen": "Hello, how are you?", "bini": ""}, "id": "greeting_001", "category": "greetings"}
+{"translation": {"ffen": "What is your name?", "igbo": ""}, "id": "question_001", "category": "questions"}
+{"translation": {"ffen": "I would like some food", "urhobo": ""}, "id": "request_001", "category": "requests"}
+{"translation": {"ffen": "Thank you very much", "calabar": ""}, "id": "gratitude_001", "category": "gratitude"}
+{"translation": {"ffen": "Where is the market?", "bini": ""}, "id": "location_001", "category": "directions"}
