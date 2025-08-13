@@ -94,7 +94,7 @@ I've analyzed your starlette-admin implementation and identified several issues 
 
 ## Issues Identified:
 
-1. **Incorrect Base Class**: Your custom views (`BulkTaskImportView` and `FlexibleBulkImportView`) extend `BaseView` directly, but they should extend `CustomView` for proper integration with the admin interface.
+1. **Incorrect Base Class**: Your custom view (`FlexibleBulkImportView`) extends `BaseView` directly, but it should extend `CustomView` for proper integration with the admin interface.
 
 2. **Missing Required Attributes**: Your custom views are missing several required attributes that starlette-admin expects:
    - `name` attribute for route naming
@@ -167,21 +167,7 @@ class FlexibleBulkImportView(CustomView):  # Extend CustomView
         except Exception as e:
             return await self._render_form(request, templates, {"error_message": f"Unexpected error: {str(e)}"})
 
-# Apply the same pattern to BulkTaskImportView
-class BulkTaskImportView(CustomView):
-    """Custom admin view for bulk task import from JSONL files"""
 
-    def __init__(self, templates: Jinja2Templates):
-        super().__init__(
-            label="Bulk Task Import",
-            icon="fa fa-upload",
-            path="/bulk-task-import",
-            template_path="bulk_import.html",
-            name="bulk-task-import",
-            methods=["GET", "POST"],
-            add_to_menu=True
-        )
-        self.templates = templates
 
     # ... rest of your implementation following the same pattern
 ```
@@ -200,8 +186,7 @@ class BulkTaskImportView(CustomView):
 
 ## Template Directory:
 
-Make sure your templates are in the correct directory. Based on your main.py, templates should be in `app/templates/` and your template files should be:
-- `app/templates/bulk_import.html`
+Make sure your templates are in the correct directory. Based on your main.py, templates should be in `app/templates/` and your template file should be:
 - `app/templates/flexible_import.html`
 
 After making these changes, your custom views should appear in the admin dashboard menu and function properly.

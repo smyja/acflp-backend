@@ -358,22 +358,7 @@ class UserStats(SQLModel):
     rejected_submissions: int
 
 
-# Bulk Task Import Models
-class BulkTaskImportItem(SQLModel):
-    """Single task item for bulk import from JSONL"""
-    title: str = Field(max_length=255)
-    description: str | None = Field(default=None, max_length=1000)
-    task_type: str = Field(default="text_translation")
-    source_language: str
-    target_language: str | None = Field(default=None)
-    content: str = Field(max_length=5000)
-    reward_amount: Decimal = Field(default=Decimal("0.00"))
-
-
-class BulkTaskImportRequest(SQLModel):
-    """Request model for bulk task import"""
-    tasks: list[BulkTaskImportItem]
-    default_reward_amount: Decimal | None = Field(default=None)
+# Bulk Task Import Models - REMOVED (using flexible import only)
 
 
 class FlexibleBulkImportRequest(SQLModel):
@@ -399,13 +384,3 @@ class FlexibleBulkImportResponse(SQLModel):
     created_task_ids: list[uuid.UUID] = Field(default_factory=list)
     message: str
     sample_processed_data: list[dict[str, Any]] = Field(default_factory=list, description="First 3 processed items for verification")
-
-
-class BulkTaskImportResponse(SQLModel):
-    """Response model for bulk task import"""
-    success_count: int
-    error_count: int
-    total_count: int
-    errors: list[str] = Field(default_factory=list)
-    created_task_ids: list[uuid.UUID] = Field(default_factory=list)
-    message: str

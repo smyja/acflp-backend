@@ -14,7 +14,7 @@ from app.api.main import api_router
 from app.core.config import settings
 from app.core.db import engine
 from app.models import User, Item, Task, TaskSubmission, UserEarning
-from app.admin import BulkTaskImportView, FlexibleBulkImportView
+from app.admin import FlexibleBulkImportView
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -117,7 +117,6 @@ admin.add_view(ModelView(TaskSubmission, icon="fa fa-file-text"))
 admin.add_view(ModelView(UserEarning, icon="fa fa-dollar-sign"))
 
 # add the custom pages as CustomView instances
-admin.add_view(BulkTaskImportView())
 admin.add_view(FlexibleBulkImportView())
 
 admin.mount_to(app)

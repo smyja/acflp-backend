@@ -31,9 +31,7 @@ from app.models import (
     TaskStatus,
     SubmissionStatus,
     User,
-    BulkTaskImportItem,
-    BulkTaskImportRequest,
-    BulkTaskImportResponse,
+
     FlexibleBulkImportRequest,
     FlexibleBulkImportResponse,
 )
@@ -515,142 +513,10 @@ def read_my_stats(session: SessionDep, current_user: CurrentUser) -> Any:
     )
 
 
-# Bulk Task Import Endpoints
-@router.post("/bulk-import", response_model=BulkTaskImportResponse)
-def bulk_import_tasks(
-    *, session: SessionDep, current_user: CurrentUser, request: BulkTaskImportRequest
-) -> Any:
-    """
-    Bulk import tasks from a list of task items. Only superusers can import tasks.
-    """
-    if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Not enough permissions")
-    
-    success_count = 0
-    error_count = 0
-    errors = []
-    created_task_ids = []
-    
-    for i, task_item in enumerate(request.tasks):
-        try:
-            # Apply defaults if not specified
-            reward_amount = task_item.reward_amount
-            if reward_amount == Decimal("0.00") and request.default_reward_amount:
-                reward_amount = request.default_reward_amount
-            
-            # Create TaskCreate object
-            task_create = TaskCreate(
-                title=task_item.title,
-                description=task_item.description,
-                task_type=task_item.task_type,
-                source_language=task_item.source_language,
-                target_language=task_item.target_language,
-                content=task_item.content,
-                reward_amount=reward_amount,
-            )
-            
-            # Create and save task
-            task = Task.model_validate(task_create, update={"created_by_id": current_user.id})
-            session.add(task)
-            session.flush()  # Get the ID without committing
-            
-            created_task_ids.append(task.id)
-            success_count += 1
-            
-        except Exception as e:
-            error_count += 1
-            errors.append(f"Row {i + 1}: {str(e)}")
-    
-    # Commit all successful tasks
-    if success_count > 0:
-        session.commit()
-    
-    total_count = len(request.tasks)
-    message = f"Successfully imported {success_count} out of {total_count} tasks."
-    if error_count > 0:
-        message += f" {error_count} tasks failed to import."
-    
-    return BulkTaskImportResponse(
-        success_count=success_count,
-        error_count=error_count,
-        total_count=total_count,
-        errors=errors,
-        created_task_ids=created_task_ids,
-        message=message,
-    )
+# Flexible Bulk Import Endpoints
 
 
-@router.post("/bulk-import-jsonl", response_model=BulkTaskImportResponse)
-async def bulk_import_tasks_from_jsonl(
-    *,
-    session: SessionDep,
-    current_user: CurrentUser,
-    file: UploadFile = File(...),
-     default_reward_amount: Decimal | None = None,
-) -> Any:
-    """
-    Bulk import tasks from a JSONL file. Only superusers can import tasks.
-    Each line should be a JSON object with task fields.
-    """
-    if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Not enough permissions")
-    
-    # Validate file type
-    if not file.filename or not file.filename.endswith(('.jsonl', '.json')):
-        raise HTTPException(
-            status_code=400,
-            detail="File must be a JSONL (.jsonl) or JSON (.json) file"
-        )
-    
-    try:
-        # Read file content
-        content = await file.read()
-        content_str = content.decode('utf-8')
-        
-        # Parse JSONL content
-        tasks = []
-        lines = content_str.strip().split('\n')
-        
-        for line_num, line in enumerate(lines, 1):
-            if line.strip():  # Skip empty lines
-                try:
-                    task_data = json.loads(line)
-                    task_item = BulkTaskImportItem(**task_data)
-                    tasks.append(task_item)
-                except json.JSONDecodeError as e:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Invalid JSON on line {line_num}: {str(e)}"
-                    )
-                except Exception as e:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Invalid task data on line {line_num}: {str(e)}"
-                    )
-        
-        if not tasks:
-            raise HTTPException(status_code=400, detail="No valid tasks found in file")
-        
-        # Create bulk import request
-        bulk_request = BulkTaskImportRequest(
-            tasks=tasks,
-            default_reward_amount=default_reward_amount,
-        )
-        
-        # Process the bulk import
-        return bulk_import_tasks(
-            session=session,
-            current_user=current_user,
-            request=bulk_request
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error processing file: {str(e)}"
-        )
+
 
 
 @router.post("/flexible-bulk-import", response_model=FlexibleBulkImportResponse)
