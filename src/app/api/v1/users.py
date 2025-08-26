@@ -43,7 +43,7 @@ async def write_user(
     return cast(UserRead, user_read)
 
 
-@router.get("/users", response_model=PaginatedListResponse[UserRead])
+@router.get("/users", response_model=PaginatedListResponse[UserRead], dependencies=[Depends(get_current_superuser)])
 async def read_users(
     request: Request, db: Annotated[AsyncSession, Depends(async_get_db)], page: int = 1, items_per_page: int = 10
 ) -> dict:
@@ -63,7 +63,7 @@ async def read_users_me(request: Request, current_user: Annotated[dict, Depends(
     return current_user
 
 
-@router.get("/user/{username}", response_model=UserRead)
+@router.get("/user/{username}", response_model=UserRead, dependencies=[Depends(get_current_superuser)])
 async def read_user(request: Request, username: str, db: Annotated[AsyncSession, Depends(async_get_db)]) -> UserRead:
     db_user = await crud_users.get(db=db, username=username, is_deleted=False, schema_to_select=UserRead)
     if db_user is None:
@@ -122,20 +122,20 @@ async def erase_user(
     return {"message": "User deleted"}
 
 
-@router.delete("/db_user/{username}", dependencies=[Depends(get_current_superuser)])
-async def erase_db_user(
-    request: Request,
-    username: str,
-    db: Annotated[AsyncSession, Depends(async_get_db)],
-    token: str = Depends(oauth2_scheme),
-) -> dict[str, str]:
-    db_user = await crud_users.exists(db=db, username=username)
-    if not db_user:
-        raise NotFoundException("User not found")
-
-    await crud_users.db_delete(db=db, username=username)
-    await blacklist_token(token=token, db=db)
-    return {"message": "User deleted from the database"}
+# @router.delete("/db_user/{username}", dependencies=[Depends(get_current_superuser)])
+# async def erase_db_user(
+#     request: Request,
+#     username: str,
+#     db: Annotated[AsyncSession, Depends(async_get_db)],
+#     token: str = Depends(oauth2_scheme),
+# ) -> dict[str, str]:
+#     db_user = await crud_users.exists(db=db, username=username)
+#     if not db_user:
+#         raise NotFoundException("User not found")
+#
+#     await crud_users.db_delete(db=db, username=username)
+#     await blacklist_token(token=token, db=db)
+#     return {"message": "User deleted from the database"}
 
 
 @router.get("/user/{username}/rate_limits", dependencies=[Depends(get_current_superuser)])

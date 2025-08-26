@@ -3,7 +3,7 @@ from typing import Any
 from arq.jobs import Job as ArqJob
 from fastapi import APIRouter, Depends, HTTPException
 
-from ...api.dependencies import rate_limiter_dependency
+from ...api.dependencies import get_current_user, rate_limiter_dependency
 from ...core.utils import queue
 from ...schemas.job import Job
 
@@ -34,7 +34,7 @@ async def create_task(message: str) -> dict[str, str]:
     return {"id": job.job_id}
 
 
-@router.get("/task/{task_id}")
+@router.get("/task/{task_id}", dependencies=[Depends(get_current_user)])
 async def get_task(task_id: str) -> dict[str, Any] | None:
     """Get information about a specific background task.
 

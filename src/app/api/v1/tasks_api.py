@@ -147,17 +147,17 @@ async def delete_task(
     # TODO: Invalidate cache
 
 
-@router.delete(
-    "/db/{id}", status_code=204, dependencies=[Depends(get_current_superuser)]
-)
-async def delete_db_task(
-    request: Request,
-    id: int,
-    db: Annotated[AsyncSession, Depends(async_get_db)],
-) -> None:
-    db_task = await crud_tasks.get(db=db, id=id)
-    if db_task is None:
-        raise NotFoundException("Task not found")
-
-    await crud_tasks.db_delete(db=db, id=id)
-    # TODO: Invalidate cache
+# @router.delete(
+#     "/db/{id}", status_code=204, dependencies=[Depends(get_current_superuser)]
+# )
+# async def delete_db_task(
+#     request: Request,
+#     id: int,
+#     db: Annotated[AsyncSession, Depends(async_get_db)],
+# ) -> None:
+#     db_task = await crud_tasks.get(db=db, id=id)
+#     if db_task is None:
+#         raise NotFoundException("Task not found")
+#
+#     await crud_tasks.db_delete(db=db, id=id)
+#     # TODO: Invalidate cache
