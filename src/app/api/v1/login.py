@@ -2,13 +2,12 @@ from datetime import timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, Response
-from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.config import settings
 from ...core.db.database import async_get_db
 from ...core.exceptions.http_exceptions import UnauthorizedException
-from ...core.schemas import Token
+from ...core.schemas import LoginCredentials, Token
 from ...core.security import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     TokenType,
@@ -22,12 +21,17 @@ router = APIRouter(tags=["login"])
 
 
 @router.post("/login", response_model=Token)
-async def login_for_access_token(
+async def login(
     response: Response,
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    credentials: LoginCredentials,
     db: Annotated[AsyncSession, Depends(async_get_db)],
 ) -> dict[str, str]:
-    user = await authenticate_user(username_or_email=form_data.username, password=form_data.password, db=db)
+    """Modern JSON-based login endpoint.
+    
+    Accepts JSON payload with username/email and password.
+    Returns access token and sets refresh token as httpOnly cookie.
+    """
+    user = await authenticate_user(username_or_email=credentials.username, password=credentials.password, db=db)
     if not user:
         raise UnauthorizedException("Wrong username, email or password.")
 

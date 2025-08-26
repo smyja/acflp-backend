@@ -8,6 +8,7 @@ import redis.asyncio as redis
 from arq import create_pool
 from arq.connections import RedisSettings
 from fastapi import APIRouter, Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 
@@ -18,6 +19,7 @@ from ..models import *  # noqa: F403
 from .config import (
     AppSettings,
     ClientSideCacheSettings,
+    CORSSettings,
     DatabaseSettings,
     EnvironmentOption,
     EnvironmentSettings,
@@ -135,6 +137,7 @@ def create_application(
         | RedisCacheSettings
         | AppSettings
         | ClientSideCacheSettings
+        | CORSSettings
         | RedisQueueSettings
         | RedisRateLimiterSettings
         | EnvironmentSettings
@@ -161,6 +164,7 @@ def create_application(
         - DatabaseSettings: Adds event handlers for initializing database tables during startup.
         - RedisCacheSettings: Sets up event handlers for creating and closing a Redis cache pool.
         - ClientSideCacheSettings: Integrates middleware for client-side caching.
+        - CORSSettings: Configures CORS middleware for cross-origin requests.
         - RedisQueueSettings: Sets up event handlers for creating and closing a Redis queue pool.
         - RedisRateLimiterSettings: Sets up event handlers for creating and closing a Redis rate limiter pool.
         - EnvironmentSettings: Conditionally sets documentation URLs and integrates custom routes for API documentation
@@ -180,7 +184,7 @@ def create_application(
 
     The function configures the FastAPI application with different features and behaviors
     based on the provided settings. It includes setting up database connections, Redis pools
-    for caching, queue, and rate limiting, client-side caching, and customizing the API documentation
+    for caching, queue, and rate limiting, client-side caching, CORS middleware, and customizing the API documentation
     based on the environment settings.
     """
     # --- before creating application ---
@@ -202,6 +206,15 @@ def create_application(
 
     application = FastAPI(lifespan=lifespan, **kwargs)
     application.include_router(router)
+
+    if isinstance(settings, CORSSettings):
+        application.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.CORS_ORIGINS,
+            allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
+            allow_methods=settings.CORS_ALLOW_METHODS,
+            allow_headers=settings.CORS_ALLOW_HEADERS,
+        )
 
     if isinstance(settings, ClientSideCacheSettings):
         application.add_middleware(ClientCacheMiddleware, max_age=settings.CLIENT_CACHE_MAX_AGE)

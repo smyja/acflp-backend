@@ -1,14 +1,21 @@
 import uuid as uuid_pkg
 from datetime import UTC, datetime
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, EmailStr, Field, field_serializer
 
 
 class HealthCheck(BaseModel):
     name: str
     version: str
     description: str
+
+
+
+class LoginCredentials(BaseModel):
+   
+    username: Annotated[str, Field(description="Username or email address", examples=["admin", "user@example.com"])]
+    password: Annotated[str, Field(description="User password", examples=["password123"])]
 
 
 # -------------- mixins --------------

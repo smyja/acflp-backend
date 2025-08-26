@@ -19,6 +19,16 @@ class AppSettings(BaseSettings):
     CONTACT_EMAIL: str | None = config("CONTACT_EMAIL", default=None)
 
 
+class CORSSettings(BaseSettings):
+    CORS_ORIGINS: list[str] = config(
+        "CORS_ORIGINS", 
+        default=["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.0.0.1:3001"]
+    )
+    CORS_ALLOW_CREDENTIALS: bool = config("CORS_ALLOW_CREDENTIALS", default=True)
+    CORS_ALLOW_METHODS: list[str] = config("CORS_ALLOW_METHODS", default=["*"])
+    CORS_ALLOW_HEADERS: list[str] = config("CORS_ALLOW_HEADERS", default=["*"])
+
+
 class CryptSettings(BaseSettings):
     SECRET_KEY: SecretStr = config("SECRET_KEY", cast=SecretStr)
     ALGORITHM: str = config("ALGORITHM", default="HS256")
@@ -129,6 +139,7 @@ class EnvironmentSettings(BaseSettings):
 
 class Settings(
     AppSettings,
+    CORSSettings,
     PostgresSettings,
     CryptSettings,
     FirstUserSettings,
