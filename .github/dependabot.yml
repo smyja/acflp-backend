@@ -1,0 +1,7 @@
+# Disable Dependabot
+# To completely disable Dependabot, you can either:
+# 1. Delete this file and disable Dependabot in GitHub repository settings
+# 2. Or keep this empty configuration file
+
+version: 2
+updates: []
