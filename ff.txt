@@ -1,0 +1,28 @@
+curl http://localhost:8000/openapi.json | jq '.paths | keys'
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 29608  100 29608    0     0  73695      0 --:--:-- --:--:-- --:--:-- 73835
+[
+  "/api/v1/db_user/{username}",
+  "/api/v1/login",
+  "/api/v1/logout",
+  "/api/v1/refresh",
+  "/api/v1/tasks/task",
+  "/api/v1/tasks/task/{task_id}",
+  "/api/v1/tier",
+  "/api/v1/tier/{name}",
+  "/api/v1/tier/{tier_name}/rate_limit",
+  "/api/v1/tier/{tier_name}/rate_limit/{id}",
+  "/api/v1/tier/{tier_name}/rate_limits",
+  "/api/v1/tiers",
+  "/api/v1/user",
+  "/api/v1/user/me/",
+  "/api/v1/user/{username}",
+  "/api/v1/user/{username}/rate_limits",
+  "/api/v1/user/{username}/tier",
+  "/api/v1/users",
+  "/api/v1/{username}/db_post/{id}",
+  "/api/v1/{username}/post",
+  "/api/v1/{username}/post/{id}",
+  "/api/v1/{username}/posts"
+]
