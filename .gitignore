@@ -5,6 +5,9 @@ __pycache__/
 
 # C extensions
 *.so
+*.sql
+migrate_acflp_data.py
+migrate_real_acflp_data.py
 
 # Distribution / packaging
 .Python
