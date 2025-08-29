@@ -88,8 +88,8 @@ async def google_login(request: Request):
     
     Redirects user to Google's OAuth consent screen.
     """
-    with google_sso:
-        return await google_sso.get_login_redirect(request, redirect_uri=settings.OAUTH_REDIRECT_URI)
+    async with google_sso:
+        return await google_sso.get_login_redirect()
 
 
 @router.get("/google/callback")
@@ -104,7 +104,7 @@ async def google_callback(
     and returns authentication tokens.
     """
     try:
-        with google_sso:
+        async with google_sso:
             user_info = await google_sso.verify_and_process(request)
             
         if not user_info or not user_info.email:
@@ -180,7 +180,7 @@ async def get_google_user_info(
         raise HTTPException(status_code=404, detail="Endpoint not available")
         
     try:
-        with google_sso:
+        async with google_sso:
             user_info = await google_sso.verify_and_process(request)
             
         if not user_info or not user_info.email:
