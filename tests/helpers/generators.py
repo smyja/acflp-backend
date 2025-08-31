@@ -2,8 +2,8 @@ import uuid as uuid_pkg
 
 from sqlalchemy.orm import Session
 
-from src.app import models
-from src.app.core.security import get_password_hash
+from app import models
+from app.core.security import get_password_hash
 from tests.conftest import fake
 
 
