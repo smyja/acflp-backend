@@ -68,9 +68,18 @@ def mock_redis():
 def event_loop():
     """Create an instance of the default event loop for the test session."""
     import asyncio
-    loop = asyncio.get_event_loop_policy().new_event_loop()
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
     yield loop
-    loop.close()
+    # Don't close the loop if it's still running
+    if not loop.is_closed():
+        try:
+            loop.close()
+        except RuntimeError:
+            pass
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -112,26 +121,32 @@ async def async_db_session():
     # Create test database engine
     test_engine = create_async_engine(
         settings.POSTGRES_ASYNC_PREFIX + settings.POSTGRES_URI,
-        echo=False
+        echo=False,
+        pool_pre_ping=True
     )
     
-    # Create all tables
-    async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        # Create all tables
+        async with test_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        
+        # Create session
+        TestSessionLocal = sessionmaker(
+            test_engine, class_=AsyncSession, expire_on_commit=False
+        )
+        
+        async with TestSessionLocal() as session:
+            yield session
     
-    # Create session
-    TestSessionLocal = sessionmaker(
-        test_engine, class_=AsyncSession, expire_on_commit=False
-    )
-    
-    async with TestSessionLocal() as session:
-        yield session
-    
-    # Clean up - drop all tables with CASCADE
-    async with test_engine.begin() as conn:
-        await conn.run_sync(lambda sync_conn: Base.metadata.drop_all(sync_conn, checkfirst=True))
-    
-    await test_engine.dispose()
+    finally:
+        # Clean up - drop all tables with CASCADE
+        try:
+            async with test_engine.begin() as conn:
+                await conn.run_sync(lambda sync_conn: Base.metadata.drop_all(sync_conn, checkfirst=True))
+        except Exception:
+            pass  # Ignore cleanup errors
+        
+        await test_engine.dispose()
 
 
 @pytest.fixture

@@ -27,7 +27,7 @@ async def login(
     db: Annotated[AsyncSession, Depends(async_get_db)],
 ) -> dict[str, str]:
     """Modern JSON-based login endpoint.
-    
+
     Accepts JSON payload with username/email and password.
     Returns access token and sets refresh token as httpOnly cookie.
     """
@@ -52,10 +52,10 @@ async def login(
 async def refresh_access_token(
     request: Request, 
     response: Response,
-    db: AsyncSession = Depends(async_get_db)
+    db: Annotated[AsyncSession, Depends(async_get_db)]
 ) -> dict[str, str]:
     """Refresh access token using refresh token from HTTP-only cookie.
-    
+
     Returns new access token and optionally new refresh token.
     Implements token rotation for enhanced security.
     """

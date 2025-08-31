@@ -59,7 +59,9 @@ class TaskCreateInternal(TaskCreate):
 class TaskUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    title: Annotated[str | None, Field(min_length=2, max_length=255, examples=["This is my updated task"], default=None)]
+    title: Annotated[
+        str | None, Field(min_length=2, max_length=255, examples=["This is my updated task"], default=None)
+    ]
     text: Annotated[
         str | None,
         Field(min_length=1, max_length=63206, examples=["This is the updated content of my task."], default=None),
@@ -73,7 +75,9 @@ class TaskUpdate(BaseModel):
     task_type: Annotated[str | None, Field(max_length=50, examples=["text_translation"], default=None)]
     status: Annotated[str | None, Field(max_length=50, examples=["in_progress"], default=None)]
     assignee_id: Annotated[int | None, Field(examples=[1], default=None)]
-    translated_text: Annotated[str | None, Field(min_length=1, max_length=63206, examples=["This is the translated content."], default=None)]
+    translated_text: Annotated[
+        str | None, Field(min_length=1, max_length=63206, examples=["This is the translated content."], default=None)
+    ]
     translated_by_user_id: Annotated[int | None, Field(examples=[1], default=None)]
     translated_at: Annotated[datetime | None, Field(examples=["2023-01-01T00:00:00Z"], default=None)]
 
@@ -83,7 +87,9 @@ class TaskUpdateInternal(TaskUpdate):
 
 
 class TaskTranslationCreate(BaseModel):
-    translated_text: Annotated[str, Field(min_length=1, max_length=63206, examples=["This is the translated content of my task."])]
+    translated_text: Annotated[
+        str, Field(min_length=1, max_length=63206, examples=["This is the translated content of my task."])
+    ]
 
 
 class TaskDelete(BaseModel):

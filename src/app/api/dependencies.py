@@ -39,7 +39,7 @@ async def get_current_user(
     raise UnauthorizedException("User not authenticated.")
 
 
-async def get_optional_user(request: Request, db: AsyncSession = Depends(async_get_db)) -> dict | None:
+async def get_optional_user(request: Request, db: Annotated[AsyncSession, Depends(async_get_db)]) -> dict | None:
     token = request.headers.get("Authorization")
     if not token:
         return None
@@ -73,7 +73,7 @@ async def get_current_superuser(current_user: Annotated[dict, Depends(get_curren
 
 
 async def rate_limiter_dependency(
-    request: Request, db: Annotated[AsyncSession, Depends(async_get_db)], user: dict | None = Depends(get_optional_user)
+    request: Request, db: Annotated[AsyncSession, Depends(async_get_db)], user: Annotated[dict | None, Depends(get_optional_user)]
 ) -> None:
     if hasattr(request.app.state, "initialization_complete"):
         await request.app.state.initialization_complete.wait()

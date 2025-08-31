@@ -1,7 +1,7 @@
 """Add missing columns to task model
 
 Revision ID: 77c60bc1491d
-Revises: 
+Revises:
 Create Date: 2025-08-30 22:42:31.238776
 
 """

@@ -79,7 +79,7 @@ async def _create_oauth_user(db: AsyncSession, user_info) -> None:
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Failed to create OAuth user: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to create user account")
+        raise HTTPException(status_code=500, detail="Failed to create user account") from e
 
 
 @router.get("/google/login")
@@ -200,4 +200,4 @@ async def get_google_user_info(
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"OAuth user info error: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=400, detail="OAuth verification failed")
+        raise HTTPException(status_code=400, detail="OAuth verification failed") from e

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Cookie, Depends, Response
 from jose import JWTError
@@ -14,9 +14,9 @@ router = APIRouter(tags=["login"])
 @router.post("/logout")
 async def logout(
     response: Response,
-    access_token: str = Depends(oauth2_scheme),
-    refresh_token: Optional[str] = Cookie(None, alias="refresh_token"),
-    db: AsyncSession = Depends(async_get_db),
+    access_token: Annotated[str, Depends(oauth2_scheme)],
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    refresh_token: Annotated[Optional[str], Cookie(alias="refresh_token")] = None,
 ) -> dict[str, str]:
     try:
         if not refresh_token:
@@ -27,5 +27,5 @@ async def logout(
 
         return {"message": "Logged out successfully"}
 
-    except JWTError:
-        raise UnauthorizedException("Invalid token.")
+    except JWTError as e:
+        raise UnauthorizedException("Invalid token.") from e

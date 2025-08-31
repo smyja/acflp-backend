@@ -155,6 +155,7 @@ class EnvironmentOption(Enum):
     LOCAL = "local"
     STAGING = "staging"
     PRODUCTION = "production"
+    TESTING = "testing"
 
 
 class EnvironmentSettings(BaseSettings):

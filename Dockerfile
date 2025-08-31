@@ -40,7 +40,7 @@ RUN pip install uv
 FROM base as dependencies
 
 # Copy dependency files
-COPY pyproject.toml uv.lock* ./
+COPY pyproject.toml uv.lock* README.md ./
 
 # Install dependencies
 RUN uv venv /opt/venv \

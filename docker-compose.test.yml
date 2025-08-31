@@ -11,9 +11,20 @@ services:
     environment:
       - ENVIRONMENT=testing
       - SECRET_KEY=test-secret-key-for-testing-only
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_SERVER=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=web_test
       - POSTGRES_URL=postgresql://postgres:postgres@db:5432/web_test
+      - REDIS_CACHE_HOST=redis
+      - REDIS_CACHE_PORT=6379
       - REDIS_CACHE_URL=redis://redis:6379/0
+      - REDIS_QUEUE_HOST=redis
+      - REDIS_QUEUE_PORT=6379
       - REDIS_QUEUE_URL=redis://redis:6379/1
+      - REDIS_RATE_LIMIT_HOST=redis
+      - REDIS_RATE_LIMIT_PORT=6379
       - REDIS_RATE_LIMIT_URL=redis://redis:6379/2
       - CORS_ORIGINS=["http://localhost:3000","http://localhost:3001"]
     depends_on:
@@ -25,7 +36,7 @@ services:
       - ./src:/app/src
       - ./tests:/app/tests
     command: >
-      sh -c "alembic upgrade head &&
+      sh -c "cd src && alembic upgrade head && cd .. &&
              uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
@@ -45,7 +56,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_test_data:/var/lib/postgresql/data
-      - ./scripts/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d web_test"]
       interval: 10s
@@ -76,9 +86,20 @@ services:
     environment:
       - ENVIRONMENT=testing
       - SECRET_KEY=test-secret-key-for-testing-only
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_SERVER=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=web_test
       - POSTGRES_URL=postgresql://postgres:postgres@db:5432/web_test
+      - REDIS_CACHE_HOST=redis
+      - REDIS_CACHE_PORT=6379
       - REDIS_CACHE_URL=redis://redis:6379/0
+      - REDIS_QUEUE_HOST=redis
+      - REDIS_QUEUE_PORT=6379
       - REDIS_QUEUE_URL=redis://redis:6379/1
+      - REDIS_RATE_LIMIT_HOST=redis
+      - REDIS_RATE_LIMIT_PORT=6379
       - REDIS_RATE_LIMIT_URL=redis://redis:6379/2
     depends_on:
       db:
@@ -90,15 +111,7 @@ services:
       - ./tests:/app/tests
       - ./coverage:/app/coverage
     command: >
-      sh -c "alembic upgrade head &&
-             pytest tests/ 
-               --cov=src/app 
-               --cov-report=xml:/app/coverage/coverage.xml 
-               --cov-report=html:/app/coverage/htmlcov 
-               --cov-report=term-missing 
-               --cov-fail-under=80 
-               --junitxml=/app/coverage/pytest-results.xml 
-               -v"
+      sh -c "pytest tests/ --cov=src/app --cov-report=xml:/app/coverage/coverage.xml --cov-report=html:/app/coverage/htmlcov --cov-report=term-missing --cov-fail-under=80 --junitxml=/app/coverage/pytest-results.xml -v"
     profiles:
       - test
 
