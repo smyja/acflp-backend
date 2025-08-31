@@ -117,6 +117,10 @@ ignore = [
     "S106", # Possible hardcoded password
     "S108", # Probable insecure usage of temp file/directory
 ]
+"__init__.py" = [
+    "F401", # unused import
+    "F403", # star imports
+]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
@@ -136,6 +140,7 @@ omit = [
     "*/.venv/*",
     "*/migrations/*",
     "*/alembic/*",
+    "src/app/main.py",
 ]
 branch = true
 parallel = true
@@ -183,6 +188,17 @@ show_error_codes = true
 show_column_numbers = true
 show_error_context = true
 pretty = true
+ignore_missing_imports = true
+mypy_path = "src"
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = "app.*"
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
 color_output = true
 error_summary = true
 
@@ -225,10 +241,16 @@ python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 markers = [
-    "slow: marks tests as slow (deselect with '-m "not slow"')",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
     "e2e: marks tests as end-to-end tests",
+    "api: marks tests as API tests",
+    "auth: marks tests as authentication tests",
+    "database: marks tests as database tests",
+    "cache: marks tests as cache tests",
+    "external: marks tests as external service tests",
+    "error: marks tests as error scenario tests",
     "security: marks tests as security tests",
     "performance: marks tests as performance tests",
 ]
@@ -237,12 +259,6 @@ filterwarnings = [
     "ignore::PendingDeprecationWarning",
 ]
 asyncio_mode = "auto"
-
-[tool.ruff.lint.per-file-ignores]
-"__init__.py" = [
-    "F401", # unused import
-    "F403", # star imports
-]
 
 # Bandit security configuration
 [tool.bandit]
@@ -281,7 +297,7 @@ ignore = [
     "D415", # First line should end with a period, question mark, or exclamation point
     "D416", # Section name should end with a colon
 ]
-match = "(?!test_).*\.py"
+match = "(?!test_).*\\.py"
 match_dir = "(?!tests).*"
 convention = "google"
 
@@ -315,93 +331,5 @@ style = [
     ["disabled", "fg:#858585 italic"]
 ]
 
-[tool.ruff.lint.mccabe]
-max-complexity = 24
-
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = [
-    "-v",
-    "--strict-markers",
-    "--strict-config",
-    "--cov=src/app",
-    "--cov-report=term-missing",
-    "--cov-report=html",
-    "--cov-report=xml",
-    "--cov-fail-under=80",
-    "--tb=short"
-]
-markers = [
-    "unit: Unit tests - fast, isolated tests with mocked dependencies",
-    "integration: Integration tests - test component interactions",
-    "e2e: End-to-end tests - full workflow and user journey tests",
-    "api: API tests - test HTTP endpoints and responses",
-    "slow: Slow tests - tests that take longer to run",
-    "auth: Authentication and authorization tests",
-    "database: Database-related tests",
-    "cache: Cache-related tests",
-    "external: Tests that mock external services",
-    "error: Error scenario and edge case tests"
-]
-asyncio_mode = "auto"
-filterwarnings = [
-    "ignore::PendingDeprecationWarning:starlette.formparsers",
-    "ignore::DeprecationWarning",
-    "ignore::pytest.PytestUnraisableExceptionWarning"
-]
-
-
-
-[tool.coverage.run]
-source = ["src/app"]
-omit = [
-    "src/app/__init__.py",
-    "src/app/core/config.py",
-    "*/tests/*",
-    "*/venv/*",
-    "*/.venv/*",
-    "*/migrations/*",
-    "src/app/main.py",
-]
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "if self.debug:",
-    "if settings.DEBUG",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if 0:",
-    "if __name__ == .__main__.:",
-    "class .*\\bProtocol\\):",
-    "@(abc\\.)?abstractmethod",
-]
-show_missing = true
-skip_covered = false
-precision = 2
-
-[tool.coverage.html]
-directory = "htmlcov"
-
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-ignore_missing_imports = true
-mypy_path = "src"
-explicit_package_bases = true
-
-[[tool.mypy.overrides]]
-module = "app.*"
-disallow_untyped_defs = true
-
-[[tool.mypy.overrides]]
-module = "tests.*"
-disallow_untyped_defs = false
