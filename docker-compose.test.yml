@@ -26,6 +26,7 @@ services:
       - REDIS_RATE_LIMIT_HOST=redis
       - REDIS_RATE_LIMIT_PORT=6379
       - REDIS_RATE_LIMIT_URL=redis://redis:6379/2
+      - PYTHONPATH=/app/src
       - CORS_ORIGINS=["http://localhost:3000","http://localhost:3001"]
     depends_on:
       db:
@@ -101,6 +102,7 @@ services:
       - REDIS_RATE_LIMIT_HOST=redis
       - REDIS_RATE_LIMIT_PORT=6379
       - REDIS_RATE_LIMIT_URL=redis://redis:6379/2
+      - PYTHONPATH=/app/src
     depends_on:
       db:
         condition: service_healthy
@@ -111,7 +113,7 @@ services:
       - ./tests:/app/tests
       - ./coverage:/app/coverage
     command: >
-      sh -c "pytest tests/ --cov=src/app --cov-report=xml:/app/coverage/coverage.xml --cov-report=html:/app/coverage/htmlcov --cov-report=term-missing --cov-fail-under=80 --junitxml=/app/coverage/pytest-results.xml -v"
+      sh -c "/opt/venv/bin/python -m pytest tests/ --cov=src/app --cov-report=xml:/app/coverage/coverage.xml --cov-report=html:/app/coverage/htmlcov --cov-report=term-missing --cov-fail-under=80 --junitxml=/app/coverage/pytest-results.xml -v"
     profiles:
       - test
 
@@ -139,12 +141,13 @@ services:
       - ENVIRONMENT=testing
       - SECRET_KEY=test-secret-key-for-testing-only
       - POSTGRES_URL=postgresql://postgres:postgres@db:5432/web_test
+      - PYTHONPATH=/app/src
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - ./src:/app/src
-    command: alembic upgrade head
+    command: /opt/venv/bin/alembic upgrade head
     profiles:
       - migrate
 
@@ -159,12 +162,13 @@ services:
       - ./tests:/app/tests
       - ./pyproject.toml:/app/pyproject.toml
     command: >
-      sh -c "ruff check src --output-format=github &&
-             ruff format src --check &&
-             mypy src --config-file pyproject.toml"
+      sh -c "/opt/venv/bin/ruff check src --output-format=github &&
+             /opt/venv/bin/ruff format src --check &&
+             /opt/venv/bin/mypy src --config-file pyproject.toml"
     environment:
       - ENVIRONMENT=testing
       - SECRET_KEY=test-secret-key-for-testing-only
+      - PYTHONPATH=/app/src
     profiles:
       - quality
 

@@ -45,7 +45,7 @@ COPY pyproject.toml uv.lock* README.md ./
 # Install dependencies
 RUN uv venv /opt/venv \
     && . /opt/venv/bin/activate \
-    && uv pip install -e ".[dev]"
+    && uv pip install -e '.[dev]'
 
 # ============================================================================
 # Development stage - For local development
@@ -74,14 +74,22 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload
 # ============================================================================
 # Test stage - For running tests
 # ============================================================================
-FROM dependencies as test
+FROM base as test
 
-# Install additional test dependencies
-RUN . /opt/venv/bin/activate \
+# Copy dependency files
+COPY pyproject.toml uv.lock* README.md ./
+
+# Install dependencies
+RUN uv venv /opt/venv \
+    && . /opt/venv/bin/activate \
+    && uv pip install -e '.[dev]' \
     && uv pip install pytest-xdist pytest-benchmark locust
 
 # Copy application code
 COPY --chown=appuser:appuser . .
+
+# Ensure app directory is writable for runtime-generated data
+RUN mkdir -p /app/crudadmin_data && chown -R appuser:appuser /app
 
 # Switch to non-root user
 USER appuser

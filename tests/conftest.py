@@ -15,7 +15,6 @@ from sqlalchemy.orm.session import Session
 from app.core.config import settings
 from app.main import app
 from app.schemas.user import UserRead, UserCreate
-from app.schemas.post import PostRead, PostCreate
 from app.schemas.tier import TierRead, TierCreate
 from app.schemas.task import TaskRead, TaskCreate
 
@@ -270,28 +269,7 @@ def current_user_dict():
     }
 
 
-@pytest.fixture
-def sample_post_data():
-    """Generate sample post data for tests."""
-    return {
-        "title": fake.sentence(nb_words=4),
-        "content": fake.text(max_nb_chars=500),
-        "media_url": fake.image_url(),
-    }
 
-
-@pytest.fixture
-def sample_post_read():
-    """Generate a sample PostRead object."""
-    return PostRead(
-        id=1,
-        title=fake.sentence(nb_words=4),
-        content=fake.text(max_nb_chars=500),
-        media_url=fake.image_url(),
-        created_by_user_id=1,
-        created_at=fake.date_time(tzinfo=timezone.utc),
-        updated_at=fake.date_time(tzinfo=timezone.utc),
-    )
 
 
 @pytest.fixture
@@ -430,7 +408,6 @@ def mock_external_api(monkeypatch):
     
     mock_client = AsyncMock()
     mock_client.get.return_value = mock_response
-    mock_client.post.return_value = mock_response
     mock_client.put.return_value = mock_response
     mock_client.delete.return_value = mock_response
     
