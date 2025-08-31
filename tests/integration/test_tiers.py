@@ -6,9 +6,9 @@ from datetime import datetime, timezone
 import pytest
 from fastapi import Request
 
-from app.api.v1.tiers import write_tier, read_tiers, read_tier, patch_tier, erase_tier
-from app.core.exceptions.http_exceptions import DuplicateValueException, NotFoundException
-from app.schemas.tier import TierCreate, TierRead, TierUpdate
+from src.app.api.v1.tiers import write_tier, read_tiers, read_tier, patch_tier, erase_tier
+from src.app.core.exceptions.http_exceptions import DuplicateValueException, NotFoundException
+from src.app.schemas.tier import TierCreate, TierRead, TierUpdate
 
 
 class TestWriteTier:

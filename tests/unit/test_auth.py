@@ -7,10 +7,10 @@ import pytest
 from fastapi import Response, Request
 from jose import JWTError
 
-from app.api.v1.login import login, refresh_access_token
-from app.api.v1.logout import logout
-from app.core.exceptions.http_exceptions import UnauthorizedException
-from app.core.schemas import LoginCredentials, Token
+from src.app.api.v1.login import login, refresh_access_token
+from src.app.api.v1.logout import logout
+from src.app.core.exceptions.http_exceptions import UnauthorizedException
+from src.app.core.schemas import LoginCredentials, Token
 
 
 class TestLogin:

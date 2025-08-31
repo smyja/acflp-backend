@@ -7,10 +7,10 @@ from unittest.mock import Mock
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User
-from app.models.tier import Tier
-from app.models.task import Task
-from app.models.rate_limit import RateLimit
+from src.app.models.user import User
+from src.app.models.tier import Tier
+from src.app.models.task import Task
+from src.app.models.rate_limit import RateLimit
 
 
 class TestUserModel:

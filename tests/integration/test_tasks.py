@@ -7,15 +7,15 @@ import pytest
 from fastapi import Request, HTTPException
 from arq.jobs import Job as ArqJob
 
-from app.api.v1.tasks import create_task, get_task
-from app.api.v1.tasks_api import (
+from src.app.api.v1.tasks import create_task, get_task
+from src.app.api.v1.tasks_api import (
     get_next_task, create_task as create_task_api, get_my_tasks, 
     get_assigned_tasks, get_all_tasks, get_task as get_task_api,
     update_task, create_translation, delete_task
 )
-from app.core.exceptions.http_exceptions import ForbiddenException, NotFoundException
-from app.schemas.task import TaskCreate, TaskRead, TaskUpdate, TaskTranslationCreate
-from app.schemas.job import Job
+from src.app.core.exceptions.http_exceptions import ForbiddenException, NotFoundException
+from src.app.schemas.task import TaskCreate, TaskRead, TaskUpdate, TaskTranslationCreate
+from src.app.schemas.job import Job
 
 
 class TestBackgroundTasks:

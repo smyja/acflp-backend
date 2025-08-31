@@ -6,13 +6,13 @@ from datetime import datetime, timezone
 import pytest
 from fastapi import Request
 
-from app.api.v1.rate_limits import (
+from src.app.api.v1.rate_limits import (
     write_rate_limit, read_rate_limits, read_rate_limit, 
     patch_rate_limit, erase_rate_limit
 )
-from app.core.exceptions.http_exceptions import DuplicateValueException, NotFoundException
-from app.schemas.rate_limit import RateLimitCreate, RateLimitRead, RateLimitUpdate
-from app.schemas.tier import TierRead
+from src.app.core.exceptions.http_exceptions import DuplicateValueException, NotFoundException
+from src.app.schemas.rate_limit import RateLimitCreate, RateLimitRead, RateLimitUpdate
+from src.app.schemas.tier import TierRead
 
 
 class TestWriteRateLimit:

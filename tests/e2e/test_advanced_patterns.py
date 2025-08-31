@@ -10,8 +10,8 @@ from datetime import datetime, timezone
 from httpx import AsyncClient, TimeoutException, HTTPError
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.core.exceptions.http_exceptions import NotFoundException, ForbiddenException
-from app.schemas.task import TaskCreate, TaskUpdate
+from src.app.core.exceptions.http_exceptions import NotFoundException, ForbiddenException
+from src.app.schemas.task import TaskCreate, TaskUpdate
 
 
 @pytest.mark.e2e
