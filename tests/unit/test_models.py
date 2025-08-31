@@ -8,9 +8,9 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.models.user import User
-from src.app.models.tier import Tier
+
 from src.app.models.task import Task
-from src.app.models.rate_limit import RateLimit
+
 
 
 class TestUserModel:
@@ -91,40 +91,7 @@ class TestUserModel:
         assert isinstance(user.deleted_at, datetime)
 
 
-class TestTierModel:
-    """Test Tier model functionality."""
 
-    @pytest.mark.unit
-    def test_tier_creation(self):
-        """Test creating a tier instance."""
-        tier = Tier(
-            name="Premium"
-        )
-        
-        assert tier.name == "Premium"
-        assert isinstance(tier.created_at, datetime)
-        assert tier.updated_at is None
-
-    @pytest.mark.unit
-    def test_tier_defaults(self):
-        """Test tier model default values."""
-        tier = Tier(name="Basic")
-        
-        assert tier.name == "Basic"
-        assert tier.updated_at is None
-        assert isinstance(tier.created_at, datetime)
-
-    @pytest.mark.unit
-    def test_tier_update(self):
-        """Test tier update functionality."""
-        tier = Tier(
-            name="Standard",
-            updated_at=datetime.now(timezone.utc)
-        )
-        
-        assert tier.name == "Standard"
-        assert tier.updated_at is not None
-        assert isinstance(tier.updated_at, datetime)
 
 
 class TestTaskModel:
@@ -236,101 +203,8 @@ class TestTaskModel:
         assert isinstance(task.deleted_at, datetime)
 
 
-class TestRateLimitModel:
-    """Test RateLimit model functionality."""
-
-    @pytest.mark.unit
-    def test_rate_limit_creation(self):
-        """Test creating a rate limit instance."""
-        rate_limit = RateLimit(
-            tier_id=1,
-            name="API Rate Limit",
-            path="/api/v1/tasks",
-            limit=100,
-            period=3600
-        )
-        
-        assert rate_limit.tier_id == 1
-        assert rate_limit.name == "API Rate Limit"
-        assert rate_limit.path == "/api/v1/tasks"
-        assert rate_limit.limit == 100
-        assert rate_limit.period == 3600
-        assert isinstance(rate_limit.created_at, datetime)
-        assert rate_limit.updated_at is None
-
-    @pytest.mark.unit
-    def test_rate_limit_defaults(self):
-        """Test rate limit model default values."""
-        rate_limit = RateLimit(
-            tier_id=2,
-            name="Basic Rate Limit",
-            path="/api/v1/users",
-            limit=50,
-            period=1800
-        )
-        
-        assert rate_limit.updated_at is None
-        assert isinstance(rate_limit.created_at, datetime)
-
-    @pytest.mark.unit
-    def test_rate_limit_update(self):
-        """Test rate limit update functionality."""
-        rate_limit = RateLimit(
-            tier_id=1,
-            name="Updated Rate Limit",
-            path="/api/v1/auth",
-            limit=200,
-            period=7200,
-            updated_at=datetime.now(timezone.utc)
-        )
-        
-        assert rate_limit.limit == 200
-        assert rate_limit.period == 7200
-        assert rate_limit.updated_at is not None
-        assert isinstance(rate_limit.updated_at, datetime)
-
-    @pytest.mark.unit
-    def test_rate_limit_different_tiers(self):
-        """Test rate limits for different tiers."""
-        basic_limit = RateLimit(
-            tier_id=1,
-            name="Basic Tier Limit",
-            path="/api/v1/tasks",
-            limit=10,
-            period=3600
-        )
-        
-        premium_limit = RateLimit(
-            tier_id=2,
-            name="Premium Tier Limit",
-            path="/api/v1/tasks",
-            limit=1000,
-            period=3600
-        )
-        
-        assert basic_limit.tier_id == 1
-        assert basic_limit.limit == 10
-        assert premium_limit.tier_id == 2
-        assert premium_limit.limit == 1000
-        assert basic_limit.path == premium_limit.path
-        assert basic_limit.period == premium_limit.period
-
-
 class TestModelRelationships:
     """Test model relationships and foreign keys."""
-
-    @pytest.mark.unit
-    def test_user_tier_relationship(self):
-        """Test user-tier relationship."""
-        user = User(
-            name="Test User",
-            username="testuser",
-            email="test@example.com",
-            hashed_password="hashed_password_123"
-        )
-        user.tier_id = 1
-        
-        assert user.tier_id == 1
 
     @pytest.mark.unit
     def test_task_user_relationships(self):
@@ -348,19 +222,6 @@ class TestModelRelationships:
         assert task.created_by_user_id == 1
         assert task.assignee_id == 2
         assert task.translated_by_user_id == 3
-
-    @pytest.mark.unit
-    def test_rate_limit_tier_relationship(self):
-        """Test rate limit-tier relationship."""
-        rate_limit = RateLimit(
-            tier_id=1,
-            name="Test Rate Limit",
-            path="/api/v1/test",
-            limit=100,
-            period=3600
-        )
-        
-        assert rate_limit.tier_id == 1
 
     @pytest.mark.unit
     def test_task_optional_relationships(self):

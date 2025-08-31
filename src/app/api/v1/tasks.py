@@ -3,14 +3,14 @@ from typing import Any
 from arq.jobs import Job as ArqJob
 from fastapi import APIRouter, Depends, HTTPException
 
-from ...api.dependencies import get_current_user, rate_limiter_dependency
+from ...api.dependencies import get_current_user
 from ...core.utils import queue
 from ...schemas.job import Job
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
-@router.post("/task", response_model=Job, status_code=201, dependencies=[Depends(rate_limiter_dependency)])
+@router.post("/task", response_model=Job, status_code=201)
 async def create_task(message: str) -> dict[str, str]:
     """Create a new background task.
 

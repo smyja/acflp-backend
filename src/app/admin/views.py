@@ -6,10 +6,10 @@ from pydantic import BaseModel, Field
 
 from ..core.security import get_password_hash
 from ..models.task import Task
-from ..models.tier import Tier
+
 from ..models.user import User
 from ..schemas.task import TaskUpdate
-from ..schemas.tier import TierCreate, TierUpdate
+
 from ..schemas.user import UserCreate, UserUpdate
 
 
@@ -49,13 +49,6 @@ def register_admin_views(admin: CRUDAdmin) -> None:
         update_schema=UserUpdate,
         allowed_actions={"view", "create", "update"},
         password_transformer=password_transformer,
-    )
-
-    admin.add_view(
-        model=Tier,
-        create_schema=TierCreate,
-        update_schema=TierUpdate,
-        allowed_actions={"view", "create", "update", "delete"},
     )
 
     admin.add_view(

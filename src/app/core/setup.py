@@ -13,7 +13,7 @@ from fastapi.openapi.utils import get_openapi
 import redis.asyncio as redis
 
 from ..api.dependencies import get_current_superuser
-from ..core.utils.rate_limit import rate_limiter
+
 from ..middleware.client_cache_middleware import ClientCacheMiddleware
 from ..models import *  # noqa: F403
 from .config import (
@@ -25,7 +25,6 @@ from .config import (
     EnvironmentSettings,
     RedisCacheSettings,
     RedisQueueSettings,
-    RedisRateLimiterSettings,
     settings,
 )
 from .db.database import Base
@@ -60,16 +59,6 @@ async def close_redis_queue_pool() -> None:
         await queue.pool.close()
 
 
-# -------------- rate limit --------------
-async def create_redis_rate_limit_pool() -> None:
-    rate_limiter.initialize(settings.REDIS_RATE_LIMIT_URL)
-
-
-async def close_redis_rate_limit_pool() -> None:
-    if rate_limiter.client is not None:
-        await rate_limiter.client.close()
-
-
 # -------------- application --------------
 async def set_threadpool_tokens(number_of_tokens: int = 100) -> None:
     limiter = anyio.to_thread.current_default_thread_limiter()
@@ -84,7 +73,6 @@ def lifespan_factory(
         | ClientSideCacheSettings
         | CORSSettings
         | RedisQueueSettings
-        | RedisRateLimiterSettings
         | EnvironmentSettings
     ),
     create_tables_on_start: bool = True,
@@ -184,7 +172,6 @@ def create_application(
         | ClientSideCacheSettings
         | CORSSettings
         | RedisQueueSettings
-        | RedisRateLimiterSettings
         | EnvironmentSettings
     ),
     create_tables_on_start: bool = True,

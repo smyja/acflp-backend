@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+
 
 from src.app.core.security import (
     create_access_token,
@@ -17,6 +17,8 @@ from src.app.core.security import (
     blacklist_token,
     blacklist_tokens,
     authenticate_user,
+)
+from src.app.api.dependencies import (
     get_current_user,
     get_current_superuser,
 )

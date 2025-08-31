@@ -15,7 +15,7 @@ from sqlalchemy.orm.session import Session
 from src.app.core.config import settings
 from src.app.main import app
 from src.app.schemas.user import UserRead, UserCreate
-from src.app.schemas.tier import TierRead, TierCreate
+
 from src.app.schemas.task import TaskRead, TaskCreate
 
 DATABASE_URI = settings.postgres_uri
@@ -272,25 +272,10 @@ def current_user_dict():
 
 
 
-@pytest.fixture
-def sample_tier_data():
-    """Generate sample tier data for tests."""
-    return {
-        "name": fake.word().capitalize(),
-        "description": fake.text(max_nb_chars=200),
-    }
 
 
-@pytest.fixture
-def sample_tier_read():
-    """Generate a sample TierRead object."""
-    return TierRead(
-        id=1,
-        name=fake.word().capitalize(),
-        description=fake.text(max_nb_chars=200),
-        created_at=fake.date_time(tzinfo=timezone.utc),
-        updated_at=fake.date_time(tzinfo=timezone.utc),
-    )
+
+
 
 
 @pytest.fixture
