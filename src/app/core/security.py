@@ -102,9 +102,7 @@ async def verify_token(token: str, expected_token_type: TokenType | str, db: Asy
 
         # Normalize expected token type to string for comparison
         expected_type_str = (
-            expected_token_type.value
-            if isinstance(expected_token_type, TokenType)
-            else expected_token_type
+            expected_token_type.value if isinstance(expected_token_type, TokenType) else expected_token_type
         )
 
         if username_or_email is None:
