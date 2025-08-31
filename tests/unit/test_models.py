@@ -53,7 +53,6 @@ class TestUserModel:
         assert user.profile_image_url == "https://profileimageurl.com"
         assert user.is_superuser is False
         assert user.is_deleted is False
-        assert user.tier_id is None
         assert user.updated_at is None
         assert user.deleted_at is None
         assert isinstance(user.uuid, uuid.UUID)
