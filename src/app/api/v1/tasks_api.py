@@ -83,7 +83,16 @@ async def create_task(
     task_internal = TaskCreateInternal(**task_internal_dict)
     created_task = await crud_tasks.create(db=db, object=task_internal)
 
-    task_read = await crud_tasks.get(db=db, id=created_task.id, schema_to_select=TaskRead)
+    # Handle union type from crud_tasks.create
+    if created_task is None:
+        raise NotFoundException("Failed to create task")
+    
+    # Extract task ID from created_task (could be dict or object)
+    task_id = created_task.id if hasattr(created_task, 'id') else created_task.get('id')
+    if task_id is None:
+        raise NotFoundException("Created task has no ID")
+
+    task_read = await crud_tasks.get(db=db, id=task_id, schema_to_select=TaskRead)
     if task_read is None:
         raise NotFoundException("Created task not found")
 
@@ -164,7 +173,9 @@ async def get_task(
     if db_task is None:
         raise NotFoundException("Task not found")
 
-    if not current_user.get("is_superuser") and db_task.created_by_user_id != current_user["id"]:
+    # Handle union type for db_task
+    created_by_user_id = db_task.created_by_user_id if hasattr(db_task, 'created_by_user_id') else db_task.get('created_by_user_id')
+    if not current_user.get("is_superuser") and created_by_user_id != current_user["id"]:
         raise ForbiddenException("You don't have permission to access this task")
 
     return cast(TaskRead, db_task)
@@ -182,7 +193,9 @@ async def update_task(
     if db_task is None:
         raise NotFoundException("Task not found")
 
-    if not current_user.get("is_superuser") and db_task.created_by_user_id != current_user["id"]:
+    # Handle union type for db_task
+    created_by_user_id = db_task.created_by_user_id if hasattr(db_task, 'created_by_user_id') else db_task.get('created_by_user_id')
+    if not current_user.get("is_superuser") and created_by_user_id != current_user["id"]:
         raise ForbiddenException("You don't have permission to update this task")
 
     updated_task = await crud_tasks.update(db=db, object=values, id=id)
@@ -202,7 +215,10 @@ async def create_translation(
     if db_task is None:
         raise NotFoundException("Task not found")
 
-    if db_task["status"] != "in_progress" or db_task["assignee_id"] != current_user["id"]:
+    # Handle union type for db_task indexing
+    task_status = db_task.status if hasattr(db_task, 'status') else db_task.get('status')
+    task_assignee_id = db_task.assignee_id if hasattr(db_task, 'assignee_id') else db_task.get('assignee_id')
+    if task_status != "in_progress" or task_assignee_id != current_user["id"]:
         raise ForbiddenException("This task is not available for translation")
 
     await crud_tasks.update(
@@ -237,7 +253,9 @@ async def delete_task(
     if db_task is None:
         raise NotFoundException("Task not found")
 
-    if not current_user.get("is_superuser") and db_task.created_by_user_id != current_user["id"]:
+    # Handle union type for db_task
+    created_by_user_id = db_task.created_by_user_id if hasattr(db_task, 'created_by_user_id') else db_task.get('created_by_user_id')
+    if not current_user.get("is_superuser") and created_by_user_id != current_user["id"]:
         raise ForbiddenException("You don't have permission to delete this task")
 
     await crud_tasks.delete(db=db, id=id)

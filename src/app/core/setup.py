@@ -57,7 +57,7 @@ async def create_redis_queue_pool() -> None:
 
 async def close_redis_queue_pool() -> None:
     if queue.pool is not None:
-        await queue.pool.aclose()
+        await queue.pool.close()
 
 
 # -------------- rate limit --------------

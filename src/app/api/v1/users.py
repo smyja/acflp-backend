@@ -36,7 +36,16 @@ async def write_user(
     user_internal = UserCreateInternal(**user_internal_dict)
     created_user = await crud_users.create(db=db, object=user_internal)
 
-    user_read = await crud_users.get(db=db, id=created_user.id, schema_to_select=UserRead)
+    # Handle union type from crud_users.create
+    if created_user is None:
+        raise NotFoundException("Failed to create user")
+    
+    # Extract user ID from created_user (could be dict or object)
+    user_id = created_user.id if hasattr(created_user, 'id') else created_user.get('id')
+    if user_id is None:
+        raise NotFoundException("Created user has no ID")
+
+    user_read = await crud_users.get(db=db, id=user_id, schema_to_select=UserRead)
     if user_read is None:
         raise NotFoundException("Created user not found")
 

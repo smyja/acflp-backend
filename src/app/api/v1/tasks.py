@@ -56,4 +56,4 @@ async def get_task(task_id: str) -> dict[str, Any] | None:
     if job_info is None:
         return None
 
-    return cast(dict[str, Any], job_info.__dict__)
+    return dict(job_info.__dict__)

@@ -34,7 +34,16 @@ async def write_rate_limit(
     rate_limit_internal = RateLimitCreateInternal(**rate_limit_internal_dict)
     created_rate_limit = await crud_rate_limits.create(db=db, object=rate_limit_internal)
 
-    rate_limit_read = await crud_rate_limits.get(db=db, id=created_rate_limit.id, schema_to_select=RateLimitRead)
+    # Handle union type from crud_rate_limits.create
+    if created_rate_limit is None:
+        raise NotFoundException("Failed to create rate limit")
+    
+    # Extract rate limit ID from created_rate_limit (could be dict or object)
+    rate_limit_id = created_rate_limit.id if hasattr(created_rate_limit, 'id') else created_rate_limit.get('id')
+    if rate_limit_id is None:
+        raise NotFoundException("Created rate limit has no ID")
+
+    rate_limit_read = await crud_rate_limits.get(db=db, id=rate_limit_id, schema_to_select=RateLimitRead)
     if rate_limit_read is None:
         raise NotFoundException("Created rate limit not found")
 

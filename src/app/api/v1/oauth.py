@@ -1,6 +1,6 @@
 from datetime import timedelta
 import secrets
-from typing import Annotated, Any
+from typing import Annotated, Any, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
@@ -118,6 +118,7 @@ async def google_callback(
         # Check if user exists
         existing_user = await crud_users.get(db=db, email=user_info.email, is_deleted=False)
 
+        user: Union[dict[Any, Any], Any] = None
         if existing_user:
             # User exists, generate tokens
             user = existing_user

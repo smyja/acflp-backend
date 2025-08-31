@@ -25,7 +25,16 @@ async def write_tier(
     tier_internal = TierCreateInternal(**tier_internal_dict)
     created_tier = await crud_tiers.create(db=db, object=tier_internal)
 
-    tier_read = await crud_tiers.get(db=db, id=created_tier.id, schema_to_select=TierRead)
+    # Handle union type from crud_tiers.create
+    if created_tier is None:
+        raise NotFoundException("Failed to create tier")
+    
+    # Extract tier ID from created_tier (could be dict or object)
+    tier_id = created_tier.id if hasattr(created_tier, 'id') else created_tier.get('id')
+    if tier_id is None:
+        raise NotFoundException("Created tier has no ID")
+
+    tier_read = await crud_tiers.get(db=db, id=tier_id, schema_to_select=TierRead)
     if tier_read is None:
         raise NotFoundException("Created tier not found")
 
