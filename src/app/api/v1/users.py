@@ -39,9 +39,9 @@ async def write_user(
     # Handle union type from crud_users.create
     if created_user is None:
         raise NotFoundException("Failed to create user")
-    
+
     # Extract user ID from created_user (could be dict or object)
-    user_id = created_user.id if hasattr(created_user, 'id') else created_user.get('id')
+    user_id = created_user.id if hasattr(created_user, "id") else created_user.get("id")
     if user_id is None:
         raise NotFoundException("Created user has no ID")
 

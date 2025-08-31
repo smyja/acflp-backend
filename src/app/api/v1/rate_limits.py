@@ -37,9 +37,9 @@ async def write_rate_limit(
     # Handle union type from crud_rate_limits.create
     if created_rate_limit is None:
         raise NotFoundException("Failed to create rate limit")
-    
+
     # Extract rate limit ID from created_rate_limit (could be dict or object)
-    rate_limit_id = created_rate_limit.id if hasattr(created_rate_limit, 'id') else created_rate_limit.get('id')
+    rate_limit_id = created_rate_limit.id if hasattr(created_rate_limit, "id") else created_rate_limit.get("id")
     if rate_limit_id is None:
         raise NotFoundException("Created rate limit has no ID")
 

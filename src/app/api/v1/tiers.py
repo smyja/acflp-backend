@@ -28,9 +28,9 @@ async def write_tier(
     # Handle union type from crud_tiers.create
     if created_tier is None:
         raise NotFoundException("Failed to create tier")
-    
+
     # Extract tier ID from created_tier (could be dict or object)
-    tier_id = created_tier.id if hasattr(created_tier, 'id') else created_tier.get('id')
+    tier_id = created_tier.id if hasattr(created_tier, "id") else created_tier.get("id")
     if tier_id is None:
         raise NotFoundException("Created tier has no ID")
 
