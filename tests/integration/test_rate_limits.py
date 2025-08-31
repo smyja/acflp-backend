@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 import pytest
 from fastapi import Request
 
-from src.src.app.api.v1.rate_limits import (
+from src.app.api.v1.rate_limits import (
     write_rate_limit,
     read_rate_limits,
     read_rate_limit,
@@ -46,9 +46,9 @@ class TestWriteRateLimit:
             period=3600,
         )
 
-        with patch("src.src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             with patch(
-                "src.src.src.app.api.v1.rate_limits.crud_rate_limits"
+                "src.src.app.api.v1.rate_limits.crud_rate_limits"
             ) as mock_crud_rate_limits:
                 mock_crud_tiers.get = AsyncMock(return_value=sample_tier_read)
                 mock_crud_rate_limits.exists = AsyncMock(return_value=False)
@@ -76,7 +76,7 @@ class TestWriteRateLimit:
             name="api_limit", path="/api/v1/tasks", limit=100, period=3600
         )
 
-        with patch("src.src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             mock_crud_tiers.get = AsyncMock(return_value=None)
 
             with pytest.raises(NotFoundException, match="Tier not found"):
@@ -91,9 +91,9 @@ class TestWriteRateLimit:
             name="existing_limit", path="/api/v1/tasks", limit=100, period=3600
         )
 
-        with patch("src.src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             with patch(
-                "src.src.src.app.api.v1.rate_limits.crud_rate_limits"
+                "src.src.app.api.v1.rate_limits.crud_rate_limits"
             ) as mock_crud_rate_limits:
                 mock_crud_tiers.get = AsyncMock(return_value=sample_tier_read)
                 mock_crud_rate_limits.exists = AsyncMock(return_value=True)
@@ -116,9 +116,9 @@ class TestWriteRateLimit:
             name="api_limit", path="/api/v1/tasks", limit=100, period=3600
         )
 
-        with patch("src.src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             with patch(
-                "src.src.src.app.api.v1.rate_limits.crud_rate_limits"
+                "src.src.app.api.v1.rate_limits.crud_rate_limits"
             ) as mock_crud_rate_limits:
                 mock_crud_tiers.get = AsyncMock(return_value=sample_tier_read)
                 mock_crud_rate_limits.exists = AsyncMock(return_value=False)
@@ -149,9 +149,9 @@ class TestReadRateLimits:
             "count": 2,
         }
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             with patch(
-                "src.src.app.api.v1.rate_limits.crud_rate_limits"
+                "src.app.api.v1.rate_limits.crud_rate_limits"
             ) as mock_crud_rate_limits:
                 mock_crud_tiers.get = AsyncMock(return_value=sample_tier_read)
                 mock_crud_rate_limits.get_multi = AsyncMock(
@@ -159,7 +159,7 @@ class TestReadRateLimits:
                 )
 
                 with patch(
-                    "src.src.app.api.v1.rate_limits.paginated_response"
+                    "src.app.api.v1.rate_limits.paginated_response"
                 ) as mock_paginated:
                     expected_response = {
                         "data": mock_rate_limits_data["data"],
@@ -188,7 +188,7 @@ class TestReadRateLimits:
         request = Mock(spec=Request)
         tier_name = "nonexistent"
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             mock_crud_tiers.get = AsyncMock(return_value=None)
 
             with pytest.raises(NotFoundException, match="Tier not found"):
@@ -214,9 +214,9 @@ class TestReadRateLimit:
             period=3600,
         )
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             with patch(
-                "src.src.app.api.v1.rate_limits.crud_rate_limits"
+                "src.app.api.v1.rate_limits.crud_rate_limits"
             ) as mock_crud_rate_limits:
                 mock_crud_tiers.get = AsyncMock(return_value=sample_tier_read)
                 mock_crud_rate_limits.get = AsyncMock(return_value=mock_rate_limit_read)
@@ -243,7 +243,7 @@ class TestReadRateLimit:
         tier_name = "nonexistent"
         rate_limit_id = 1
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             mock_crud_tiers.get = AsyncMock(return_value=None)
 
             with pytest.raises(NotFoundException, match="Tier not found"):
@@ -256,9 +256,9 @@ class TestReadRateLimit:
         tier_name = "premium"
         rate_limit_id = 999
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             with patch(
-                "src.src.app.api.v1.rate_limits.crud_rate_limits"
+                "src.app.api.v1.rate_limits.crud_rate_limits"
             ) as mock_crud_rate_limits:
                 mock_crud_tiers.get = AsyncMock(return_value=sample_tier_read)
                 mock_crud_rate_limits.get = AsyncMock(return_value=None)
@@ -287,9 +287,9 @@ class TestPatchRateLimit:
             period=3600,
         )
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             with patch(
-                "src.src.app.api.v1.rate_limits.crud_rate_limits"
+                "src.app.api.v1.rate_limits.crud_rate_limits"
             ) as mock_crud_rate_limits:
                 mock_crud_tiers.get = AsyncMock(return_value=sample_tier_read)
                 mock_crud_rate_limits.get = AsyncMock(return_value=mock_rate_limit_read)
@@ -321,7 +321,7 @@ class TestPatchRateLimit:
         rate_limit_id = 1
         rate_limit_update = RateLimitUpdate(limit=200)
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             mock_crud_tiers.get = AsyncMock(return_value=None)
 
             with pytest.raises(NotFoundException, match="Tier not found"):
@@ -337,9 +337,9 @@ class TestPatchRateLimit:
         rate_limit_id = 999
         rate_limit_update = RateLimitUpdate(limit=200)
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             with patch(
-                "src.src.app.api.v1.rate_limits.crud_rate_limits"
+                "src.app.api.v1.rate_limits.crud_rate_limits"
             ) as mock_crud_rate_limits:
                 mock_crud_tiers.get = AsyncMock(return_value=sample_tier_read)
                 mock_crud_rate_limits.get = AsyncMock(return_value=None)
@@ -369,9 +369,9 @@ class TestEraseRateLimit:
             period=3600,
         )
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             with patch(
-                "src.src.app.api.v1.rate_limits.crud_rate_limits"
+                "src.app.api.v1.rate_limits.crud_rate_limits"
             ) as mock_crud_rate_limits:
                 mock_crud_tiers.get = AsyncMock(return_value=sample_tier_read)
                 mock_crud_rate_limits.get = AsyncMock(return_value=mock_rate_limit_read)
@@ -402,7 +402,7 @@ class TestEraseRateLimit:
         tier_name = "nonexistent"
         rate_limit_id = 1
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             mock_crud_tiers.get = AsyncMock(return_value=None)
 
             with pytest.raises(NotFoundException, match="Tier not found"):
@@ -415,9 +415,9 @@ class TestEraseRateLimit:
         tier_name = "premium"
         rate_limit_id = 999
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             with patch(
-                "src.src.app.api.v1.rate_limits.crud_rate_limits"
+                "src.app.api.v1.rate_limits.crud_rate_limits"
             ) as mock_crud_rate_limits:
                 mock_crud_tiers.get = AsyncMock(return_value=sample_tier_read)
                 mock_crud_rate_limits.get = AsyncMock(return_value=None)
@@ -441,9 +441,9 @@ class TestEraseRateLimit:
             period=3600,
         )
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             with patch(
-                "src.src.app.api.v1.rate_limits.crud_rate_limits"
+                "src.app.api.v1.rate_limits.crud_rate_limits"
             ) as mock_crud_rate_limits:
                 mock_crud_tiers.get = AsyncMock(return_value=sample_tier_read)
                 mock_crud_rate_limits.get = AsyncMock(return_value=mock_rate_limit_read)
@@ -476,9 +476,9 @@ class TestRateLimitPermissions:
             period=3600,
         )
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             with patch(
-                "src.src.app.api.v1.rate_limits.crud_rate_limits"
+                "src.app.api.v1.rate_limits.crud_rate_limits"
             ) as mock_crud_rate_limits:
                 mock_crud_tiers.get = AsyncMock(return_value=sample_tier_read)
                 mock_crud_rate_limits.exists = AsyncMock(return_value=False)
@@ -508,9 +508,9 @@ class TestRateLimitPermissions:
             period=3600,
         )
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             with patch(
-                "src.src.app.api.v1.rate_limits.crud_rate_limits"
+                "src.app.api.v1.rate_limits.crud_rate_limits"
             ) as mock_crud_rate_limits:
                 mock_crud_tiers.get = AsyncMock(return_value=sample_tier_read)
                 mock_crud_rate_limits.get = AsyncMock(return_value=mock_rate_limit_read)
@@ -538,9 +538,9 @@ class TestRateLimitPermissions:
             period=3600,
         )
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             with patch(
-                "src.src.app.api.v1.rate_limits.crud_rate_limits"
+                "src.app.api.v1.rate_limits.crud_rate_limits"
             ) as mock_crud_rate_limits:
                 mock_crud_tiers.get = AsyncMock(return_value=sample_tier_read)
                 mock_crud_rate_limits.get = AsyncMock(return_value=mock_rate_limit_read)
@@ -568,9 +568,9 @@ class TestRateLimitPermissions:
             period=3600,
         )
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             with patch(
-                "src.src.app.api.v1.rate_limits.crud_rate_limits"
+                "src.app.api.v1.rate_limits.crud_rate_limits"
             ) as mock_crud_rate_limits:
                 mock_crud_tiers.get = AsyncMock(return_value=sample_tier_read)
 
@@ -586,7 +586,7 @@ class TestRateLimitPermissions:
                     return_value={"data": [mock_rate_limit_read], "count": 1}
                 )
                 with patch(
-                    "src.src.app.api.v1.rate_limits.paginated_response"
+                    "src.app.api.v1.rate_limits.paginated_response"
                 ) as mock_paginated:
                     mock_paginated.return_value = {
                         "data": [mock_rate_limit_read],

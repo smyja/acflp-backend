@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 import pytest
 from fastapi import Request
 
-from src.src.app.api.v1.tiers import (
+from src.app.api.v1.tiers import (
     write_tier,
     read_tiers,
     read_tier,
@@ -31,7 +31,7 @@ class TestWriteTier:
         tier_create = TierCreate(**sample_tier_data)
         request = Mock(spec=Request)
 
-        with patch("src.src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
+        with patch("src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
             # Mock that tier name doesn't exist
             mock_crud.exists = AsyncMock(return_value=False)
             mock_crud.create = AsyncMock(return_value=Mock(id=1))
@@ -52,7 +52,7 @@ class TestWriteTier:
         tier_create = TierCreate(**sample_tier_data)
         request = Mock(spec=Request)
 
-        with patch("src.src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
+        with patch("src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
             # Mock that tier name already exists
             mock_crud.exists = AsyncMock(return_value=True)
 
@@ -72,7 +72,7 @@ class TestWriteTier:
         tier_create = TierCreate(**sample_tier_data)
         request = Mock(spec=Request)
 
-        with patch("src.src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
+        with patch("src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
             mock_crud.exists = AsyncMock(return_value=False)
             mock_crud.create = AsyncMock(return_value=Mock(id=1))
             mock_crud.get = AsyncMock(
@@ -95,10 +95,10 @@ class TestReadTiers:
             "count": 2,
         }
 
-        with patch("src.src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
+        with patch("src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
             mock_crud.get_multi = AsyncMock(return_value=mock_tiers_data)
 
-            with patch("src.src.app.api.v1.tiers.paginated_response") as mock_paginated:
+            with patch("src.app.api.v1.tiers.paginated_response") as mock_paginated:
                 expected_response = {
                     "data": [{"id": 1, "name": "free"}, {"id": 2, "name": "premium"}],
                     "pagination": {"page": 1, "items_per_page": 10, "total_count": 2},
@@ -121,11 +121,11 @@ class TestReadTiers:
         request = Mock(spec=Request)
         mock_tiers_data = {"data": [], "count": 0}
 
-        with patch("src.src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
+        with patch("src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
             mock_crud.get_multi = AsyncMock(return_value=mock_tiers_data)
 
-            with patch("src.src.app.api.v1.tiers.paginated_response") as mock_paginated:
-                with patch("src.src.app.api.v1.tiers.compute_offset") as mock_offset:
+            with patch("src.app.api.v1.tiers.paginated_response") as mock_paginated:
+                with patch("src.app.api.v1.tiers.compute_offset") as mock_offset:
                     mock_offset.return_value = 20
                     mock_paginated.return_value = {"data": [], "pagination": {}}
 
@@ -148,7 +148,7 @@ class TestReadTier:
         request = Mock(spec=Request)
         tier_name = "premium"
 
-        with patch("src.src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
+        with patch("src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
             mock_crud.get = AsyncMock(return_value=sample_tier_read)
 
             result = await read_tier(request, tier_name, mock_db)
@@ -164,7 +164,7 @@ class TestReadTier:
         request = Mock(spec=Request)
         tier_name = "nonexistent"
 
-        with patch("src.src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
+        with patch("src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
             mock_crud.get = AsyncMock(return_value=None)
 
             with pytest.raises(NotFoundException, match="Tier not found"):
@@ -185,7 +185,7 @@ class TestPatchTier:
         tier_name = "premium"
         tier_update = TierUpdate(name="premium_updated")
 
-        with patch("src.src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
+        with patch("src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
             mock_crud.get = AsyncMock(return_value=sample_tier_read)
             mock_crud.update = AsyncMock(return_value=None)
 
@@ -206,7 +206,7 @@ class TestPatchTier:
         tier_name = "nonexistent"
         tier_update = TierUpdate(name="updated_name")
 
-        with patch("src.src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
+        with patch("src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
             mock_crud.get = AsyncMock(return_value=None)
 
             with pytest.raises(NotFoundException, match="Tier not found"):
@@ -224,7 +224,7 @@ class TestPatchTier:
         tier_name = "basic"
         tier_update = TierUpdate()  # Empty update
 
-        with patch("src.src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
+        with patch("src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
             mock_crud.get = AsyncMock(return_value=sample_tier_read)
             mock_crud.update = AsyncMock(return_value=None)
 
@@ -245,7 +245,7 @@ class TestEraseTier:
         request = Mock(spec=Request)
         tier_name = "premium"
 
-        with patch("src.src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
+        with patch("src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
             mock_crud.get = AsyncMock(return_value=sample_tier_read)
             mock_crud.delete = AsyncMock(return_value=None)
 
@@ -263,7 +263,7 @@ class TestEraseTier:
         request = Mock(spec=Request)
         tier_name = "nonexistent"
 
-        with patch("src.src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
+        with patch("src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
             mock_crud.get = AsyncMock(return_value=None)
 
             with pytest.raises(NotFoundException, match="Tier not found"):
@@ -280,7 +280,7 @@ class TestEraseTier:
         request = Mock(spec=Request)
         tier_name = "premium"
 
-        with patch("src.src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
+        with patch("src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
             mock_crud.get = AsyncMock(return_value=sample_tier_read)
             mock_crud.delete = AsyncMock(side_effect=Exception("Database error"))
 
@@ -301,7 +301,7 @@ class TestTierPermissions:
         tier_create = TierCreate(**sample_tier_data)
         request = Mock(spec=Request)
 
-        with patch("src.src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
+        with patch("src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
             mock_crud.exists = AsyncMock(return_value=False)
             mock_crud.create = AsyncMock(return_value=Mock(id=1))
             mock_crud.get = AsyncMock(return_value=Mock())
@@ -317,7 +317,7 @@ class TestTierPermissions:
         tier_name = "premium"
         tier_update = TierUpdate(name="updated_premium")
 
-        with patch("src.src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
+        with patch("src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
             mock_crud.get = AsyncMock(return_value=sample_tier_read)
             mock_crud.update = AsyncMock(return_value=None)
 
@@ -331,7 +331,7 @@ class TestTierPermissions:
         request = Mock(spec=Request)
         tier_name = "premium"
 
-        with patch("src.src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
+        with patch("src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
             mock_crud.get = AsyncMock(return_value=sample_tier_read)
             mock_crud.delete = AsyncMock(return_value=None)
 
@@ -344,7 +344,7 @@ class TestTierPermissions:
         """Test that read operations don't require authentication."""
         request = Mock(spec=Request)
 
-        with patch("src.src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
+        with patch("src.src.app.api.v1.tiers.crud_tiers") as mock_crud:
             # Test read single tier
             mock_crud.get = AsyncMock(return_value=sample_tier_read)
             result = await read_tier(request, "premium", mock_db)
@@ -354,7 +354,7 @@ class TestTierPermissions:
             mock_crud.get_multi = AsyncMock(
                 return_value={"data": [sample_tier_read], "count": 1}
             )
-            with patch("src.src.app.api.v1.tiers.paginated_response") as mock_paginated:
+            with patch("src.app.api.v1.tiers.paginated_response") as mock_paginated:
                 mock_paginated.return_value = {
                     "data": [sample_tier_read],
                     "pagination": {},

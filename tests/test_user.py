@@ -11,12 +11,12 @@ from src.app.api.v1.users import (
     read_users,
     write_user,
 )
-from app.core.exceptions.http_exceptions import (
+from src.app.core.exceptions.http_exceptions import (
     DuplicateValueException,
     ForbiddenException,
     NotFoundException,
 )
-from app.schemas.user import UserCreate, UserRead, UserUpdate
+from src.app.schemas.user import UserCreate, UserRead, UserUpdate
 
 
 class TestWriteUser:

@@ -13,11 +13,11 @@ from src.app.api.v1.tiers import (
     patch_tier,
     erase_tier,
 )
-from app.core.exceptions.http_exceptions import (
+from src.app.core.exceptions.http_exceptions import (
     DuplicateValueException,
     NotFoundException,
 )
-from app.schemas.tier import TierCreate, TierRead, TierUpdate
+from src.app.schemas.tier import TierCreate, TierRead, TierUpdate
 
 
 class TestWriteTier:

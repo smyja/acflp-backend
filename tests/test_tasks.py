@@ -19,9 +19,9 @@ from src.app.api.v1.tasks_api import (
     create_translation,
     delete_task,
 )
-from app.core.exceptions.http_exceptions import ForbiddenException, NotFoundException
-from app.schemas.task import TaskCreate, TaskRead, TaskUpdate, TaskTranslationCreate
-from app.schemas.job import Job
+from src.app.core.exceptions.http_exceptions import ForbiddenException, NotFoundException
+from src.app.schemas.task import TaskCreate, TaskRead, TaskUpdate, TaskTranslationCreate
+from src.app.schemas.job import Job
 
 
 class TestBackgroundTasks:

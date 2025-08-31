@@ -2049,13 +2049,13 @@ Example test structure:
 ```python
 import pytest
 from unittest.mock import AsyncMock, patch
-from src.src.app.api.v1.users import write_user
+from src.app.api.v1.users import write_user
 
 class TestWriteUser:
     @pytest.mark.asyncio
     async def test_create_user_success(self, mock_db, sample_user_data):
         """Test successful user creation."""
-        with patch("src.src.app.api.v1.users.crud_users") as mock_crud:
+        with patch("src.app.api.v1.users.crud_users") as mock_crud:
             mock_crud.exists = AsyncMock(return_value=False)
             mock_crud.create = AsyncMock(return_value=Mock(id=1))
             

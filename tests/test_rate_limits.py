@@ -13,12 +13,12 @@ from src.app.api.v1.rate_limits import (
     patch_rate_limit,
     erase_rate_limit,
 )
-from app.core.exceptions.http_exceptions import (
+from src.app.core.exceptions.http_exceptions import (
     DuplicateValueException,
     NotFoundException,
 )
-from app.schemas.rate_limit import RateLimitCreate, RateLimitRead, RateLimitUpdate
-from app.schemas.tier import TierRead
+from src.app.schemas.rate_limit import RateLimitCreate, RateLimitRead, RateLimitUpdate
+from src.app.schemas.tier import TierRead
 
 
 class TestWriteRateLimit:
