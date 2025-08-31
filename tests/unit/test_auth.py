@@ -169,8 +169,8 @@ class TestLogout:
         access_token = "valid_access_token"
         refresh_token = None  # Missing refresh token
 
-        with pytest.raises(UnauthorizedException, match=r".*[Rr]efresh.*token.*"):
-            await logout(response, access_token, refresh_token, mock_db)
+        with pytest.raises(UnauthorizedException, match=r".*[Ii]nvalid.*token.*"):
+            await logout(response, access_token, mock_db, refresh_token)
 
     @pytest.mark.asyncio
     async def test_logout_jwt_error(self, mock_db):

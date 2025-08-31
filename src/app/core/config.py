@@ -72,13 +72,24 @@ class MySQLSettings(DatabaseSettings):
 
 class PostgresSettings(DatabaseSettings):
     POSTGRES_USER: str = config("POSTGRES_USER", default="postgres")
-    POSTGRES_PASSWORD: str = config("POSTGRES_PASSWORD", default="")
+    POSTGRES_PASSWORD: str = config("POSTGRES_PASSWORD", default="postgres")
     POSTGRES_SERVER: str = config("POSTGRES_SERVER", default="localhost")
     POSTGRES_PORT: int = config("POSTGRES_PORT", default=5432)
     POSTGRES_DB: str = config("POSTGRES_DB", default="postgres")
     POSTGRES_SYNC_PREFIX: str = config("POSTGRES_SYNC_PREFIX", default="postgresql://")
     POSTGRES_ASYNC_PREFIX: str = config("POSTGRES_ASYNC_PREFIX", default="postgresql+asyncpg://")
-    POSTGRES_URI: str = f"{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_SERVER}:{POSTGRES_PORT}/{POSTGRES_DB}"
+    
+    @property
+    def POSTGRES_URI(self) -> str:
+        # Use POSTGRES_URL if provided, otherwise construct from components
+        postgres_url = config("POSTGRES_URL", default=None)
+        if postgres_url:
+            # Extract the URI part after the protocol
+            if "://" in postgres_url:
+                return postgres_url.split("://", 1)[1]
+            return postgres_url
+        return f"{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+    
     POSTGRES_URL: str | None = config("POSTGRES_URL", default=None)
 
 

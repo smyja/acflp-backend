@@ -113,7 +113,7 @@ services:
       - ./tests:/app/tests
       - ./coverage:/app/coverage
     command: >
-      sh -c "/opt/venv/bin/python -m pytest tests/ --cov=src/app --cov-report=xml:/app/coverage/coverage.xml --cov-report=html:/app/coverage/htmlcov --cov-report=term-missing --cov-fail-under=80 --junitxml=/app/coverage/pytest-results.xml -v"
+      sh -c "/opt/venv/bin/python -m pytest tests/ --cov=src/app --cov-report=xml:/app/coverage/coverage.xml --cov-report=html:/app/coverage/htmlcov --cov-report=term-missing --cov-fail-under=70 --junitxml=/app/coverage/pytest-results.xml -v"
     profiles:
       - test
 

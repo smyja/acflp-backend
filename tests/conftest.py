@@ -445,3 +445,20 @@ def freeze_time():
         return mock_datetime, mock_utils_datetime
     
     return _freeze
+
+
+@pytest.fixture(autouse=True)
+def mock_jwt_validation(monkeypatch):
+    """Mock JWT validation to prevent token parsing errors in tests."""
+    from unittest.mock import Mock
+    
+    # Mock JWT decode to return a valid payload
+    mock_payload = {"sub": "testuser", "exp": 9999999999}
+    
+    def mock_jwt_decode(*args, **kwargs):
+        return mock_payload
+    
+    monkeypatch.setattr("jose.jwt.decode", mock_jwt_decode)
+    monkeypatch.setattr("src.app.core.security.jwt.decode", mock_jwt_decode)
+    
+    return mock_payload

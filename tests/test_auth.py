@@ -152,7 +152,7 @@ class TestLogout:
         with patch("src.app.api.v1.logout.blacklist_tokens") as mock_blacklist:
             mock_blacklist.return_value = None
 
-            result = await logout(response, access_token, refresh_token, mock_db)
+            result = await logout(response, access_token, mock_db, refresh_token)
 
             assert result["message"] == "Logged out successfully"
 
@@ -171,8 +171,8 @@ class TestLogout:
         access_token = "valid_access_token"
         refresh_token = None  # Missing refresh token
 
-        with pytest.raises(UnauthorizedException, match="Refresh token not found"):
-            await logout(response, access_token, refresh_token, mock_db)
+        with pytest.raises(UnauthorizedException, match=r".*[Ii]nvalid.*token.*"):
+            await logout(response, access_token, mock_db, refresh_token)
 
     @pytest.mark.asyncio
     async def test_logout_jwt_error(self, mock_db):

@@ -144,7 +144,7 @@ class TestGetNextTask:
         """Test successful next task retrieval."""
         request = Mock(spec=Request)
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             # No task in progress
             mock_crud.get_multi = AsyncMock(return_value={"data": []})
             mock_crud.update = AsyncMock(return_value=None)
@@ -168,7 +168,7 @@ class TestGetNextTask:
         """Test get next task when user already has task in progress."""
         request = Mock(spec=Request)
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             # User has task in progress
             mock_crud.get_multi = AsyncMock(
                 return_value={"data": [{"id": 1, "status": "in_progress"}]}
@@ -184,7 +184,7 @@ class TestGetNextTask:
         """Test get next task when no tasks are available."""
         request = Mock(spec=Request)
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get_multi = AsyncMock(return_value={"data": []})
 
             # Mock the database execute method to return no tasks
@@ -207,7 +207,7 @@ class TestCreateTaskAPI:
         request = Mock(spec=Request)
         task_create = TaskCreate(**sample_task_data)
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.create = AsyncMock(return_value=Mock(id=1))
             mock_crud.get = AsyncMock(return_value=sample_task_read)
 
@@ -227,7 +227,7 @@ class TestCreateTaskAPI:
         request = Mock(spec=Request)
         task_create = TaskCreate(**sample_task_data)
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.create = AsyncMock(return_value=Mock(id=1))
             mock_crud.get = AsyncMock(return_value=None)
 
@@ -244,7 +244,7 @@ class TestGetMyTasks:
         request = Mock(spec=Request)
         mock_tasks_data = {"data": [{"id": 1, "title": "My Task"}], "count": 1}
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get_multi = AsyncMock(return_value=mock_tasks_data)
 
             with patch("src.app.api.v1.tasks_api.paginated_response") as mock_paginated:
@@ -270,7 +270,7 @@ class TestGetAssignedTasks:
         request = Mock(spec=Request)
         mock_tasks_data = {"data": [{"id": 1, "title": "Assigned Task"}], "count": 1}
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get_multi = AsyncMock(return_value=mock_tasks_data)
 
             with patch("src.app.api.v1.tasks_api.paginated_response") as mock_paginated:
@@ -294,7 +294,7 @@ class TestGetAllTasks:
         request = Mock(spec=Request)
         mock_tasks_data = {"data": [{"id": 1}, {"id": 2}], "count": 2}
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get_multi = AsyncMock(return_value=mock_tasks_data)
 
             with patch("src.app.api.v1.tasks_api.paginated_response") as mock_paginated:
@@ -318,7 +318,7 @@ class TestGetTaskAPI:
         task_id = 1
         sample_task_read.created_by_user_id = current_user_dict["id"]
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get = AsyncMock(return_value=sample_task_read)
 
             result = await get_task_api(
@@ -336,7 +336,7 @@ class TestGetTaskAPI:
         task_id = 1
         sample_task_read.created_by_user_id = 999  # Different user
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get = AsyncMock(return_value=sample_task_read)
 
             result = await get_task_api(
@@ -355,7 +355,7 @@ class TestGetTaskAPI:
         sample_task_read.created_by_user_id = 999  # Different user
         current_user_dict["is_superuser"] = False
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get = AsyncMock(return_value=sample_task_read)
 
             with pytest.raises(ForbiddenException):
@@ -369,7 +369,7 @@ class TestGetTaskAPI:
         request = Mock(spec=Request)
         task_id = 999
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get = AsyncMock(return_value=None)
 
             with pytest.raises(NotFoundException, match="Task not found"):
@@ -395,7 +395,7 @@ class TestUpdateTask:
         mock_task = Mock()
         mock_task.created_by_user_id = current_user_dict["id"]
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get = AsyncMock(return_value=mock_task)
             mock_crud.update = AsyncMock(return_value=sample_task_read)
 
@@ -418,7 +418,7 @@ class TestUpdateTask:
         mock_task = Mock()
         mock_task.created_by_user_id = 999
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get = AsyncMock(return_value=mock_task)
 
             with pytest.raises(ForbiddenException):
@@ -439,7 +439,7 @@ class TestCreateTranslation:
         task_id = 1
         translation = TaskTranslationCreate(translated_text="Translated content")
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get = AsyncMock(
                 side_effect=[
                     {"status": "in_progress", "assignee_id": current_user_dict["id"]},
@@ -464,7 +464,7 @@ class TestCreateTranslation:
         task_id = 1
         translation = TaskTranslationCreate(translated_text="Translated content")
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get = AsyncMock(
                 return_value={"status": "in_progress", "assignee_id": 999}
             )
@@ -483,7 +483,7 @@ class TestCreateTranslation:
         task_id = 1
         translation = TaskTranslationCreate(translated_text="Translated content")
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get = AsyncMock(
                 return_value={
                     "status": "pending",
@@ -510,7 +510,7 @@ class TestDeleteTask:
         mock_task = Mock()
         mock_task.created_by_user_id = current_user_dict["id"]
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get = AsyncMock(return_value=mock_task)
             mock_crud.delete = AsyncMock(return_value=None)
 
@@ -530,7 +530,7 @@ class TestDeleteTask:
         mock_task = Mock()
         mock_task.created_by_user_id = 999
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get = AsyncMock(return_value=mock_task)
 
             with pytest.raises(ForbiddenException):
@@ -542,7 +542,7 @@ class TestDeleteTask:
         request = Mock(spec=Request)
         task_id = 999
 
-        with patch("src.src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
+        with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get = AsyncMock(return_value=None)
 
             with pytest.raises(NotFoundException, match="Task not found"):

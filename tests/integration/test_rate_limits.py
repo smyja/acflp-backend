@@ -46,9 +46,9 @@ class TestWriteRateLimit:
             period=3600,
         )
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             with patch(
-                "src.src.app.api.v1.rate_limits.crud_rate_limits"
+                "src.app.api.v1.rate_limits.crud_rate_limits"
             ) as mock_crud_rate_limits:
                 mock_crud_tiers.get = AsyncMock(return_value=sample_tier_read)
                 mock_crud_rate_limits.exists = AsyncMock(return_value=False)
@@ -76,7 +76,7 @@ class TestWriteRateLimit:
             name="api_limit", path="/api/v1/tasks", limit=100, period=3600
         )
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             mock_crud_tiers.get = AsyncMock(return_value=None)
 
             with pytest.raises(NotFoundException, match="Tier not found"):
@@ -91,9 +91,9 @@ class TestWriteRateLimit:
             name="existing_limit", path="/api/v1/tasks", limit=100, period=3600
         )
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             with patch(
-                "src.src.app.api.v1.rate_limits.crud_rate_limits"
+                "src.app.api.v1.rate_limits.crud_rate_limits"
             ) as mock_crud_rate_limits:
                 mock_crud_tiers.get = AsyncMock(return_value=sample_tier_read)
                 mock_crud_rate_limits.exists = AsyncMock(return_value=True)
@@ -116,9 +116,9 @@ class TestWriteRateLimit:
             name="api_limit", path="/api/v1/tasks", limit=100, period=3600
         )
 
-        with patch("src.src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
+        with patch("src.app.api.v1.rate_limits.crud_tiers") as mock_crud_tiers:
             with patch(
-                "src.src.app.api.v1.rate_limits.crud_rate_limits"
+                "src.app.api.v1.rate_limits.crud_rate_limits"
             ) as mock_crud_rate_limits:
                 mock_crud_tiers.get = AsyncMock(return_value=sample_tier_read)
                 mock_crud_rate_limits.exists = AsyncMock(return_value=False)
