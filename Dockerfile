@@ -4,7 +4,7 @@
 # ============================================================================
 # Base stage - Common dependencies and setup
 # ============================================================================
-FROM python:3.11-slim as base
+FROM python:3.11-slim AS base
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -37,7 +37,7 @@ RUN pip install uv
 # ============================================================================
 # Dependencies stage - Install Python dependencies
 # ============================================================================
-FROM base as dependencies
+FROM base AS dependencies
 
 # Copy dependency files
 COPY pyproject.toml uv.lock* README.md ./
@@ -50,7 +50,7 @@ RUN uv venv /opt/venv \
 # ============================================================================
 # Development stage - For local development
 # ============================================================================
-FROM dependencies as development
+FROM dependencies AS development
 
 # Copy application code
 COPY --chown=appuser:appuser . .
@@ -74,7 +74,7 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload
 # ============================================================================
 # Test stage - For running tests
 # ============================================================================
-FROM base as test
+FROM base AS test
 
 # Copy dependency files
 COPY pyproject.toml uv.lock* README.md ./
@@ -106,10 +106,10 @@ CMD ["pytest", "tests/", "-v", "--cov=src/app", "--cov-report=term-missing"]
 # ============================================================================
 # Production dependencies stage - Minimal production dependencies
 # ============================================================================
-FROM base as prod-dependencies
+FROM base AS prod-dependencies
 
-# Copy dependency files
-COPY pyproject.toml uv.lock* ./
+# Copy dependency files (include README for build metadata)
+COPY pyproject.toml uv.lock* README.md ./
 
 # Install only production dependencies
 RUN uv venv /opt/venv \
@@ -119,7 +119,7 @@ RUN uv venv /opt/venv \
 # ============================================================================
 # Production stage - Optimized for production deployment
 # ============================================================================
-FROM python:3.11-slim as production
+FROM python:3.11-slim AS production
 
 # Set environment variables for production
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -185,7 +185,7 @@ CMD ["gunicorn", "src.app.main:app", \
 # ============================================================================
 # Security scanning stage - For vulnerability assessment
 # ============================================================================
-FROM production as security
+FROM production AS security
 
 # Switch back to root for security tools installation
 USER root
