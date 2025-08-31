@@ -12,11 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 
-from app.core.config import settings
-from app.main import app
-from app.schemas.user import UserRead, UserCreate
-from app.schemas.tier import TierRead, TierCreate
-from app.schemas.task import TaskRead, TaskCreate
+from src.app.core.config import settings
+from src.app.main import app
+from src.app.schemas.user import UserRead, UserCreate
+from src.app.schemas.tier import TierRead, TierCreate
+from src.app.schemas.task import TaskRead, TaskCreate
 
 DATABASE_URI = settings.POSTGRES_URI
 DATABASE_PREFIX = settings.POSTGRES_SYNC_PREFIX
@@ -84,7 +84,7 @@ def event_loop():
 @pytest.fixture(scope="session", autouse=True)
 def setup_cache_client():
     """Initialize cache client for tests to prevent MissingClientError."""
-    from app.core.utils import cache
+    from src.app.core.utils import cache
     from unittest.mock import AsyncMock, Mock
     
     # Create a mock Redis client for tests
@@ -114,8 +114,8 @@ async def async_db_session():
     """Create a fresh async database session for each test with proper cleanup."""
     from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
     from sqlalchemy.orm import sessionmaker
-    from app.core.db.database import Base
-    from app.core.config import settings
+    from src.app.core.db.database import Base
+    from src.app.core.config import settings
     
     # Create test database engine
     test_engine = create_async_engine(
@@ -151,8 +151,8 @@ async def async_db_session():
 @pytest.fixture
 async def test_user_factory(async_db_session):
     """Factory for creating test users with realistic data."""
-    from app.models.user import User
-    from app.core.security import get_password_hash
+    from src.app.models.user import User
+    from src.app.core.security import get_password_hash
     
     created_users = []
     
@@ -187,7 +187,7 @@ async def test_user_factory(async_db_session):
 @pytest.fixture
 async def test_task_factory(async_db_session):
     """Factory for creating test tasks with realistic data."""
-    from app.models.task import Task
+    from src.app.models.task import Task
     
     created_tasks = []
     
@@ -241,7 +241,7 @@ def sample_user_read():
     """Generate a sample UserRead object."""
     import uuid
 
-    from app.schemas.user import UserRead
+    from src.app.schemas.user import UserRead
 
     return UserRead(
         id=1,
@@ -353,7 +353,7 @@ def superuser_dict():
 def async_client():
     """Create a test client for API testing."""
     from fastapi.testclient import TestClient
-    from app.main import app
+    from src.app.main import app
     
     with TestClient(app) as client:
         yield client
