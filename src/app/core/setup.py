@@ -130,6 +130,50 @@ def lifespan_factory(
 
 
 # -------------- application --------------
+def _configure_app_settings(settings: AppSettings, kwargs: dict[str, Any]) -> None:
+    """Configure FastAPI app metadata from AppSettings."""
+    to_update = {
+        "title": settings.APP_NAME,
+        "description": settings.APP_DESCRIPTION,
+        "contact": {"name": settings.CONTACT_NAME, "email": settings.CONTACT_EMAIL},
+        "license_info": {"name": settings.LICENSE_NAME},
+    }
+    kwargs.update(to_update)
+
+
+def _configure_cors_middleware(application: FastAPI, settings: CORSSettings) -> None:
+    """Configure CORS middleware for the application."""
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.CORS_ORIGINS,
+        allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
+        allow_methods=settings.CORS_ALLOW_METHODS,
+        allow_headers=settings.CORS_ALLOW_HEADERS,
+    )
+
+
+def _configure_docs_router(application: FastAPI, settings: EnvironmentSettings) -> None:
+    """Configure documentation routes based on environment settings."""
+    docs_router = APIRouter()
+    if settings.ENVIRONMENT != EnvironmentOption.LOCAL:
+        docs_router = APIRouter(dependencies=[Depends(get_current_superuser)])
+
+    @docs_router.get("/docs", include_in_schema=False)
+    async def get_swagger_documentation() -> fastapi.responses.HTMLResponse:
+        return get_swagger_ui_html(openapi_url="/openapi.json", title="docs")
+
+    @docs_router.get("/redoc", include_in_schema=False)
+    async def get_redoc_documentation() -> fastapi.responses.HTMLResponse:
+        return get_redoc_html(openapi_url="/openapi.json", title="docs")
+
+    @docs_router.get("/openapi.json", include_in_schema=False)
+    async def openapi() -> dict[str, Any]:
+        out: dict = get_openapi(title=application.title, version=application.version, routes=application.routes)
+        return out
+
+    application.include_router(docs_router)
+
+
 def create_application(
     router: APIRouter,
     settings: (
@@ -187,15 +231,9 @@ def create_application(
     for caching, queue, and rate limiting, client-side caching, CORS middleware, and customizing the API documentation
     based on the environment settings.
     """
-    # --- before creating application ---
+    # Configure app settings before creating application
     if isinstance(settings, AppSettings):
-        to_update = {
-            "title": settings.APP_NAME,
-            "description": settings.APP_DESCRIPTION,
-            "contact": {"name": settings.CONTACT_NAME, "email": settings.CONTACT_EMAIL},
-            "license_info": {"name": settings.LICENSE_NAME},
-        }
-        kwargs.update(to_update)
+        _configure_app_settings(settings, kwargs)
 
     if isinstance(settings, EnvironmentSettings):
         kwargs.update({"docs_url": None, "redoc_url": None, "openapi_url": None})
@@ -207,37 +245,14 @@ def create_application(
     application = FastAPI(lifespan=lifespan, **kwargs)
     application.include_router(router)
 
+    # Configure middleware and additional features
     if isinstance(settings, CORSSettings):
-        application.add_middleware(
-            CORSMiddleware,
-            allow_origins=settings.CORS_ORIGINS,
-            allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
-            allow_methods=settings.CORS_ALLOW_METHODS,
-            allow_headers=settings.CORS_ALLOW_HEADERS,
-        )
+        _configure_cors_middleware(application, settings)
 
     if isinstance(settings, ClientSideCacheSettings):
         application.add_middleware(ClientCacheMiddleware, max_age=settings.CLIENT_CACHE_MAX_AGE)
 
-    if isinstance(settings, EnvironmentSettings):
-        if settings.ENVIRONMENT != EnvironmentOption.PRODUCTION:
-            docs_router = APIRouter()
-            if settings.ENVIRONMENT != EnvironmentOption.LOCAL:
-                docs_router = APIRouter(dependencies=[Depends(get_current_superuser)])
-
-            @docs_router.get("/docs", include_in_schema=False)
-            async def get_swagger_documentation() -> fastapi.responses.HTMLResponse:
-                return get_swagger_ui_html(openapi_url="/openapi.json", title="docs")
-
-            @docs_router.get("/redoc", include_in_schema=False)
-            async def get_redoc_documentation() -> fastapi.responses.HTMLResponse:
-                return get_redoc_html(openapi_url="/openapi.json", title="docs")
-
-            @docs_router.get("/openapi.json", include_in_schema=False)
-            async def openapi() -> dict[str, Any]:
-                out: dict = get_openapi(title=application.title, version=application.version, routes=application.routes)
-                return out
-
-            application.include_router(docs_router)
+    if isinstance(settings, EnvironmentSettings) and settings.ENVIRONMENT != EnvironmentOption.PRODUCTION:
+        _configure_docs_router(application, settings)
 
     return application

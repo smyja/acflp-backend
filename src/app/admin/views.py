@@ -34,10 +34,10 @@ def register_admin_views(admin: CRUDAdmin) -> None:
     schemas and permissions.
     """
     # Define field names as constants to avoid hardcoded strings
-    PASSWORD_FIELD = "password"  # nosec B105
+    password_field = "password"  # noqa: S105
     
     password_transformer = PasswordTransformer(
-        password_field=PASSWORD_FIELD,
+        password_field=password_field,
         hashed_field="hashed_password",
         hash_function=get_password_hash,
         required_fields=["name", "username", "email"],

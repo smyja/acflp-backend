@@ -181,6 +181,86 @@ async def _delete_keys_by_pattern(pattern: str) -> None:
             await client.delete(*keys)
 
 
+def _create_cache_decorator(
+    key_prefix: str,
+    resource_id_name: Any,
+    expiration: int,
+    resource_id_type: type | tuple[type, ...],
+    to_invalidate_extra: dict[str, Any] | None,
+    pattern_to_invalidate_extra: list[str] | None,
+) -> Callable:
+    """Create the actual cache decorator with the given parameters."""
+    async def _handle_get_request(cache_key: str, to_invalidate_extra: dict[str, Any] | None, pattern_to_invalidate_extra: list[str] | None) -> Any | None:
+        """Handle GET request caching logic."""
+        if to_invalidate_extra is not None or pattern_to_invalidate_extra is not None:
+            raise InvalidRequestError
+
+        cached_data = await client.get(cache_key)
+        if cached_data:
+            return json.loads(cached_data.decode())
+        return None
+
+    async def _cache_result(cache_key: str, result: Any, expiration: int) -> Any:
+        """Cache the result for GET requests."""
+        serializable_data = jsonable_encoder(result)
+        serialized_data = json.dumps(serializable_data)
+
+        await client.set(cache_key, serialized_data)
+        await client.expire(cache_key, expiration)
+
+        return json.loads(serialized_data)
+
+    async def _invalidate_cache(cache_key: str, to_invalidate_extra: dict[str, Any] | None, pattern_to_invalidate_extra: list[str] | None, kwargs: dict[str, Any]) -> None:
+        """Invalidate cache for non-GET requests."""
+        await client.delete(cache_key)
+        
+        if to_invalidate_extra is not None:
+            formatted_extra = _format_extra_data(to_invalidate_extra, kwargs)
+            for prefix, id in formatted_extra.items():
+                extra_cache_key = f"{prefix}:{id}"
+                await client.delete(extra_cache_key)
+
+        if pattern_to_invalidate_extra is not None:
+            for pattern in pattern_to_invalidate_extra:
+                formatted_pattern = _format_prefix(pattern, kwargs)
+                await _delete_keys_by_pattern(formatted_pattern + "*")
+
+    async def _process_request(func: Callable, request: Request, args: tuple, kwargs: dict[str, Any]) -> Any:
+        """Process the request with caching logic."""
+        if client is None:
+            raise MissingClientError
+
+        if resource_id_name:
+            resource_id = kwargs[resource_id_name]
+        else:
+            resource_id = _infer_resource_id(kwargs=kwargs, resource_id_type=resource_id_type)
+
+        formatted_key_prefix = _format_prefix(key_prefix, kwargs)
+        cache_key = f"{formatted_key_prefix}:{resource_id}"
+        
+        if request.method == "GET":
+            cached_result = await _handle_get_request(cache_key, to_invalidate_extra, pattern_to_invalidate_extra)
+            if cached_result is not None:
+                return cached_result
+
+        result = await func(request, *args, **kwargs)
+
+        if request.method == "GET":
+            return await _cache_result(cache_key, result, expiration)
+        else:
+            await _invalidate_cache(cache_key, to_invalidate_extra, pattern_to_invalidate_extra, kwargs)
+
+        return result
+
+    def wrapper(func: Callable) -> Callable:
+        @functools.wraps(func)
+        async def inner(request: Request, *args: Any, **kwargs: Any) -> Any:
+            return await _process_request(func, request, args, kwargs)
+        return inner
+
+    return wrapper
+
+
 def cache(
     key_prefix: str,
     resource_id_name: Any = None,
@@ -282,54 +362,11 @@ def cache(
     - Using `pattern_to_invalidate_extra` can be resource-intensive on large datasets. Use it judiciously and
       consider the potential impact on Redis performance.
     """
-
-    def wrapper(func: Callable) -> Callable:
-        @functools.wraps(func)
-        async def inner(request: Request, *args: Any, **kwargs: Any) -> Any:
-            if client is None:
-                raise MissingClientError
-
-            if resource_id_name:
-                resource_id = kwargs[resource_id_name]
-            else:
-                resource_id = _infer_resource_id(kwargs=kwargs, resource_id_type=resource_id_type)
-
-            formatted_key_prefix = _format_prefix(key_prefix, kwargs)
-            cache_key = f"{formatted_key_prefix}:{resource_id}"
-            if request.method == "GET":
-                if to_invalidate_extra is not None or pattern_to_invalidate_extra is not None:
-                    raise InvalidRequestError
-
-                cached_data = await client.get(cache_key)
-                if cached_data:
-                    return json.loads(cached_data.decode())
-
-            result = await func(request, *args, **kwargs)
-
-            if request.method == "GET":
-                serializable_data = jsonable_encoder(result)
-                serialized_data = json.dumps(serializable_data)
-
-                await client.set(cache_key, serialized_data)
-                await client.expire(cache_key, expiration)
-
-                return json.loads(serialized_data)
-
-            else:
-                await client.delete(cache_key)
-                if to_invalidate_extra is not None:
-                    formatted_extra = _format_extra_data(to_invalidate_extra, kwargs)
-                    for prefix, id in formatted_extra.items():
-                        extra_cache_key = f"{prefix}:{id}"
-                        await client.delete(extra_cache_key)
-
-                if pattern_to_invalidate_extra is not None:
-                    for pattern in pattern_to_invalidate_extra:
-                        formatted_pattern = _format_prefix(pattern, kwargs)
-                        await _delete_keys_by_pattern(formatted_pattern + "*")
-
-            return result
-
-        return inner
-
-    return wrapper
+    return _create_cache_decorator(
+        key_prefix=key_prefix,
+        resource_id_name=resource_id_name,
+        expiration=expiration,
+        resource_id_type=resource_id_type,
+        to_invalidate_extra=to_invalidate_extra,
+        pattern_to_invalidate_extra=pattern_to_invalidate_extra,
+    )

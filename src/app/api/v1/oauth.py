@@ -31,11 +31,11 @@ google_sso = GoogleSSO(
 
 async def _create_oauth_user(db: AsyncSession, user_info) -> None:
     """Create a new user from OAuth provider information.
-    
+
     Args:
         db: Database session
         user_info: OAuth user information from provider
-        
+
     Raises:
         HTTPException: If user creation fails
     """
@@ -43,16 +43,16 @@ async def _create_oauth_user(db: AsyncSession, user_info) -> None:
     # This prevents password-based login while maintaining security
     secure_password = secrets.token_urlsafe(32)
     hashed_password = get_password_hash(secure_password)
-    
+
     # Generate unique username from email
     base_username = user_info.email.split("@")[0].lower()
     # Remove any non-alphanumeric characters to match username pattern
     base_username = "".join(c for c in base_username if c.isalnum())
-    
+
     # Ensure username meets minimum length requirement
     if len(base_username) < 2:
         base_username = "user"
-    
+
     # Find available username
     username = base_username
     counter = 1
@@ -63,7 +63,7 @@ async def _create_oauth_user(db: AsyncSession, user_info) -> None:
         if counter > 9999:
             username = f"user{secrets.randbelow(999999)}"
             break
-    
+
     # Prepare user data
     user_data = UserCreateInternal(
         username=username,
@@ -71,7 +71,7 @@ async def _create_oauth_user(db: AsyncSession, user_info) -> None:
         name=user_info.display_name or user_info.first_name or "User",
         hashed_password=hashed_password,
     )
-    
+
     # Create user
     try:
         await crud_users.create(db=db, object=user_data)
@@ -85,7 +85,7 @@ async def _create_oauth_user(db: AsyncSession, user_info) -> None:
 @router.get("/google/login")
 async def google_login(request: Request):
     """Initiate Google OAuth login.
-    
+
     Redirects user to Google's OAuth consent screen.
     """
     async with google_sso:
@@ -99,24 +99,24 @@ async def google_callback(
     db: Annotated[AsyncSession, Depends(async_get_db)],
 ):
     """Handle Google OAuth callback.
-    
+
     Processes the OAuth response, creates or retrieves user,
     and returns authentication tokens.
     """
     try:
         async with google_sso:
             user_info = await google_sso.verify_and_process(request)
-            
+
         if not user_info or not user_info.email:
             raise HTTPException(status_code=400, detail="Failed to get user information from Google")
-        
+
         # Validate required user information
         if not user_info.email or "@" not in user_info.email:
             raise HTTPException(status_code=400, detail="Invalid email from OAuth provider")
-        
+
         # Check if user exists
         existing_user = await crud_users.get(db=db, email=user_info.email, is_deleted=False)
-        
+
         if existing_user:
             # User exists, generate tokens
             user = existing_user
@@ -124,18 +124,18 @@ async def google_callback(
             # Create new OAuth user
             await _create_oauth_user(db, user_info)
             user = await crud_users.get(db=db, email=user_info.email, is_deleted=False)
-            
+
             if not user:
                 raise HTTPException(status_code=500, detail="Failed to create user account")
-        
+
         # Generate tokens
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = await create_access_token(
             data={"sub": user["username"]}, expires_delta=access_token_expires
         )
-        
+
         refresh_token = await create_refresh_token(data={"sub": user["username"]})
-        
+
         # Set refresh token as HTTP-only cookie with security settings
         max_age = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
         response.set_cookie(
@@ -146,11 +146,11 @@ async def google_callback(
             samesite="lax",
             max_age=max_age,
         )
-        
+
         # Redirect to frontend with access token
         frontend_redirect_url = f"{settings.FRONTEND_URL}/auth/callback?token={access_token}"
         return RedirectResponse(url=frontend_redirect_url)
-        
+
     except HTTPException:
         # Re-raise HTTP exceptions as-is
         raise
@@ -159,7 +159,7 @@ async def google_callback(
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"OAuth callback error: {str(e)}", exc_info=True)
-        
+
         # Redirect to frontend with generic error message
         error_redirect_url = f"{settings.FRONTEND_URL}/auth/error?message=Authentication failed"
         return RedirectResponse(url=error_redirect_url)
@@ -171,21 +171,21 @@ async def get_google_user_info(
     db: Annotated[AsyncSession, Depends(async_get_db)],
 ):
     """Get current user information from Google OAuth.
-    
+
     This endpoint is for testing OAuth integration in development.
     Should be removed or protected in production.
     """
     # Only allow in development environment
     if settings.ENVIRONMENT.value == "production":
         raise HTTPException(status_code=404, detail="Endpoint not available")
-        
+
     try:
         async with google_sso:
             user_info = await google_sso.verify_and_process(request)
-            
+
         if not user_info or not user_info.email:
             raise HTTPException(status_code=400, detail="Failed to get user information from Google")
-            
+
         # Return only safe, non-sensitive information
         return {
             "email": user_info.email,
@@ -193,7 +193,7 @@ async def get_google_user_info(
             "provider": "google",
             "verified": True,
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:

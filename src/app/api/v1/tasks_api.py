@@ -45,7 +45,7 @@ async def get_next_task(
         .with_for_update(skip_locked=True)
     )
     task_row = result.scalar_one_or_none()
-    
+
     if not task_row:
         raise NotFoundException("No available tasks found")
 
@@ -227,14 +227,14 @@ async def create_translation(
         ),
         id=id,
     )
-    
+
     # Fetch the updated task
     updated_task = await crud_tasks.get(
         db=db, id=id, schema_to_select=TaskRead
     )
     if updated_task is None:
         raise NotFoundException("Updated task not found")
-    
+
     return cast(TaskRead, updated_task)
 
 
