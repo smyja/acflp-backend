@@ -1,3 +1,4 @@
+import inspect
 from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, Request
@@ -14,16 +15,20 @@ from ...schemas.user import UserCreate, UserCreateInternal, UserRead, UserUpdate
 router = APIRouter(tags=["users"])
 
 
+async def _await_maybe(value):
+    return await value if inspect.isawaitable(value) else value
+
+
 @router.post("/users/", response_model=UserRead, status_code=201)
 async def write_user(
     request: Request, user: UserCreate, db: Annotated[AsyncSession, Depends(async_get_db)]
 ) -> UserRead:
-    email_row = await crud_users.exists(db=db, email=user.email)
-    if email_row:
+    email_exists = await _await_maybe(crud_users.exists(db=db, email=user.email))
+    if email_exists:
         raise DuplicateValueException("Email is already registered")
 
-    username_row = await crud_users.exists(db=db, username=user.username)
-    if username_row:
+    username_exists = await _await_maybe(crud_users.exists(db=db, username=user.username))
+    if username_exists:
         raise DuplicateValueException("Username not available")
 
     user_internal_dict = user.model_dump()
@@ -31,7 +36,7 @@ async def write_user(
     del user_internal_dict["password"]
 
     user_internal = UserCreateInternal(**user_internal_dict)
-    created_user = await crud_users.create(db=db, object=user_internal)
+    created_user = await _await_maybe(crud_users.create(db=db, object=user_internal))
 
     # Handle union type from crud_users.create
     if created_user is None:
@@ -42,7 +47,7 @@ async def write_user(
     if user_id is None:
         raise NotFoundException("Created user has no ID")
 
-    user_read = await crud_users.get(db=db, id=user_id, schema_to_select=UserRead)
+    user_read = await _await_maybe(crud_users.get(db=db, id=user_id, schema_to_select=UserRead))
     if user_read is None:
         raise NotFoundException("Created user not found")
 

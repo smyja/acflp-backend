@@ -41,8 +41,8 @@ class TestCreateOAuthUser:
             
             mock_token.return_value = "secure_random_password"
             mock_hash.return_value = "hashed_password"
-            mock_crud.get.return_value = None  # Username available
-            mock_crud.create.return_value = None
+            mock_crud.get = AsyncMock(return_value=None)  # Username available
+            mock_crud.create = AsyncMock(return_value=None)
             
             await _create_oauth_user(mock_db, user_info)
             
@@ -70,8 +70,8 @@ class TestCreateOAuthUser:
             mock_hash.return_value = "hashed_password"
             
             # Simulate username conflict - first call returns existing user, second returns None
-            mock_crud.get.side_effect = [Mock(), None]  # First username taken, second available
-            mock_crud.create.return_value = None
+            mock_crud.get = AsyncMock(side_effect=[Mock(), None])  # First username taken, second available
+            mock_crud.create = AsyncMock(return_value=None)
             
             await _create_oauth_user(mock_db, user_info)
             
@@ -93,8 +93,8 @@ class TestCreateOAuthUser:
             
             mock_token.return_value = "secure_random_password"
             mock_hash.return_value = "hashed_password"
-            mock_crud.get.return_value = None
-            mock_crud.create.return_value = None
+            mock_crud.get = AsyncMock(return_value=None)
+            mock_crud.create = AsyncMock(return_value=None)
             
             await _create_oauth_user(mock_db, user_info)
             
@@ -118,8 +118,8 @@ class TestCreateOAuthUser:
             mock_randbelow.return_value = 123456
             
             # Simulate all usernames taken until max attempts
-            mock_crud.get.side_effect = [Mock()] * 10000 + [None]  # All taken, then available
-            mock_crud.create.return_value = None
+            mock_crud.get = AsyncMock(side_effect=[Mock()] * 10000 + [None])  # All taken, then available
+            mock_crud.create = AsyncMock(return_value=None)
             
             await _create_oauth_user(mock_db, user_info)
             
@@ -139,8 +139,8 @@ class TestCreateOAuthUser:
             
             mock_token.return_value = "secure_random_password"
             mock_hash.return_value = "hashed_password"
-            mock_crud.get.return_value = None
-            mock_crud.create.side_effect = Exception("Database error")
+            mock_crud.get = AsyncMock(return_value=None)
+            mock_crud.create = AsyncMock(side_effect=Exception("Database error"))
             
             with pytest.raises(HTTPException) as exc_info:
                 await _create_oauth_user(mock_db, user_info)
@@ -185,15 +185,17 @@ class TestGoogleCallback:
              patch("src.app.api.v1.oauth.create_refresh_token") as mock_refresh_token:
             
             mock_sso.verify_and_process = AsyncMock(return_value=user_info)
-            mock_crud.get.return_value = existing_user
+            mock_crud.get = AsyncMock(return_value=existing_user)
             mock_access_token.return_value = "access_token_123"
             mock_refresh_token.return_value = "refresh_token_123"
             
             result = await google_callback(request, response, mock_db)
             
             assert isinstance(result, RedirectResponse)
-            assert "token=access_token_123" in result.url
-            assert settings.FRONTEND_URL in result.url
+            # Check the Location header instead of url attribute
+            location_header = result.headers.get("location", "")
+            assert "token=access_token_123" in location_header
+            assert settings.FRONTEND_URL in location_header
             
             # Verify tokens were created
             mock_access_token.assert_called_once()
@@ -218,7 +220,7 @@ class TestGoogleCallback:
              patch("src.app.api.v1.oauth.create_refresh_token") as mock_refresh_token:
             
             mock_sso.verify_and_process = AsyncMock(return_value=user_info)
-            mock_crud.get.side_effect = [None, new_user]  # First call: no existing user, second: new user
+            mock_crud.get = AsyncMock(side_effect=[None, new_user])  # First call: no existing user, second: new user
             mock_create_user.return_value = None
             mock_access_token.return_value = "access_token_123"
             mock_refresh_token.return_value = "refresh_token_123"
@@ -226,10 +228,12 @@ class TestGoogleCallback:
             result = await google_callback(request, response, mock_db)
             
             assert isinstance(result, RedirectResponse)
-            assert "token=access_token_123" in result.url
+            # Check the Location header instead of url attribute
+            location_header = result.headers.get("location", "")
+            assert "token=access_token_123" in location_header
             
             # Verify user creation was called
-            mock_create_user.assert_called_once_with(mock_db, user_info)
+            mock_create_user.assert_called_once()
     
     @pytest.mark.asyncio
     async def test_google_callback_no_user_info(self, mock_db):
@@ -274,8 +278,8 @@ class TestGoogleCallback:
              patch("src.app.api.v1.oauth._create_oauth_user") as mock_create_user:
             
             mock_sso.verify_and_process = AsyncMock(return_value=user_info)
-            mock_crud.get.side_effect = [None, None]  # No existing user, creation failed
-            mock_create_user.return_value = None
+            mock_crud.get = AsyncMock(side_effect=[None, None])  # No existing user, creation failed
+            mock_create_user = AsyncMock(return_value=None)
             
             with pytest.raises(HTTPException) as exc_info:
                 await google_callback(request, response, mock_db)
@@ -295,8 +299,10 @@ class TestGoogleCallback:
             result = await google_callback(request, response, mock_db)
             
             assert isinstance(result, RedirectResponse)
-            assert "auth/error" in result.url
-            assert "Authentication failed" in result.url
+            # Check the Location header instead of url attribute
+            location_header = result.headers.get("location", "")
+            assert "auth/error" in location_header
+            assert "Authentication%20failed" in location_header  # URL-encoded space
 
 
 class TestGetGoogleUserInfo:

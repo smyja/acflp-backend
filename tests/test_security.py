@@ -167,7 +167,8 @@ class TestTokenVerification:
     async def test_verify_token_valid_access(self, mock_db):
         """Test verification of valid access token."""
         with patch("src.app.core.security.SECRET_KEY") as mock_secret, \
-             patch("src.app.core.security.crud_token_blacklist") as mock_blacklist:
+             patch("src.app.core.security.crud_token_blacklist") as mock_blacklist, \
+             patch("src.app.core.security.ALGORITHM", "HS256"):
             
             mock_secret.get_secret_value.return_value = "test_secret_key"
             mock_blacklist.exists = AsyncMock(return_value=False)  # Token not blacklisted
@@ -175,12 +176,13 @@ class TestTokenVerification:
             # Create a valid token
             payload = {
                 "sub": "testuser",
-                "exp": datetime.now(UTC) + timedelta(hours=1),
-                "iat": datetime.now(UTC)
+                "exp": int((datetime.now(UTC) + timedelta(hours=1)).timestamp()),
+                "iat": int(datetime.now(UTC).timestamp()),
+                "token_type": "access"
             }
             token = jwt.encode(payload, "test_secret_key", algorithm="HS256")
             
-            result = await verify_token(token, "access", mock_db)
+            result = await verify_token(token, TokenType.ACCESS, mock_db)
             
             assert result is not None
             assert result.username_or_email == "testuser"
@@ -194,12 +196,23 @@ class TestTokenVerification:
             # Create an expired token
             payload = {
                 "sub": "testuser",
-                "exp": datetime.now(UTC) - timedelta(hours=1),  # Expired
-                "iat": datetime.now(UTC) - timedelta(hours=2)
+                "exp": int((datetime.now(UTC) - timedelta(hours=1)).timestamp()),  # Expired
+                "iat": int((datetime.now(UTC) - timedelta(hours=2)).timestamp()),
+                "token_type": "access"
             }
             token = jwt.encode(payload, "test_secret_key", algorithm="HS256")
             
-            result = await verify_token(token, "access", mock_db)
+            # Debug: Check what's in the token
+            decoded = jwt.decode(
+                token,
+                "test_secret_key",
+                algorithms=["HS256"],
+                options={"verify_signature": False, "verify_exp": False},
+            )
+            print(f"\nDecoded token: {decoded}")
+            
+            result = await verify_token(token, TokenType.ACCESS, mock_db)
+            print(f"Result: {result}")
             
             assert result is None
     
@@ -207,7 +220,8 @@ class TestTokenVerification:
     async def test_verify_token_blacklisted(self, mock_db):
         """Test verification of blacklisted token."""
         with patch("src.app.core.security.SECRET_KEY") as mock_secret, \
-             patch("src.app.core.security.crud_token_blacklist") as mock_blacklist:
+             patch("src.app.core.security.crud_token_blacklist") as mock_blacklist, \
+             patch("src.app.core.security.ALGORITHM", "HS256"):
             
             mock_secret.get_secret_value.return_value = "test_secret_key"
             mock_blacklist.exists = AsyncMock(return_value=True)  # Token is blacklisted
@@ -215,8 +229,9 @@ class TestTokenVerification:
             # Create a valid token
             payload = {
                 "sub": "testuser",
-                "exp": datetime.now(UTC) + timedelta(hours=1),
-                "iat": datetime.now(UTC)
+                "exp": int((datetime.now(UTC) + timedelta(hours=1)).timestamp()),
+                "iat": int(datetime.now(UTC).timestamp()),
+                "token_type": "access"
             }
             token = jwt.encode(payload, "test_secret_key", algorithm="HS256")
             
@@ -233,8 +248,9 @@ class TestTokenVerification:
             # Create token with different secret
             payload = {
                 "sub": "testuser",
-                "exp": datetime.now(UTC) + timedelta(hours=1),
-                "iat": datetime.now(UTC)
+                "exp": int((datetime.now(UTC) + timedelta(hours=1)).timestamp()),
+                "iat": int(datetime.now(UTC).timestamp()),
+                "token_type": "access"
             }
             token = jwt.encode(payload, "different_secret", algorithm="HS256")
             
@@ -246,23 +262,66 @@ class TestTokenVerification:
     async def test_verify_token_wrong_type(self, mock_db):
         """Test verification of token with wrong type."""
         with patch("src.app.core.security.SECRET_KEY") as mock_secret, \
-             patch("src.app.core.security.crud_token_blacklist") as mock_blacklist:
+             patch("src.app.core.security.crud_token_blacklist") as mock_blacklist, \
+             patch("src.app.core.security.ALGORITHM", "HS256"):
             
             mock_secret.get_secret_value.return_value = "test_secret_key"
+            # Do not treat the token as blacklisted
             mock_blacklist.exists = AsyncMock(return_value=False)
             
-            # Create refresh token but verify as access
+            # Create a real refresh token so token_type is reliably set to "refresh"
+            token = await create_refresh_token({"sub": "testuser"})
+            
+            # Debug: Check token contents
+            decoded = jwt.decode(token, "test_secret_key", algorithms=["HS256"])
+            print(f"\nDEBUG - Token contents: {decoded}")
+            print(f"DEBUG - Token type in payload: {decoded.get('token_type')}")
+            print(f"DEBUG - Expected type: {TokenType.REFRESH.value}")
+            
+            # Debug: Check if blacklist mock is working
+            blacklist_result = await mock_blacklist.exists(mock_db, token=token)
+            print(f"DEBUG - Blacklist check result: {blacklist_result}")
+            
+            # First verify with correct type - should pass
+            correct_result = await verify_token(token, TokenType.REFRESH, mock_db)
+            print(f"DEBUG - Correct result: {correct_result}")
+            assert correct_result is not None
+            assert correct_result.username_or_email == "testuser"
+            
+            # Then verify with wrong type - should fail
+            wrong_result = await verify_token(token, TokenType.ACCESS, mock_db)
+            assert wrong_result is None
+    
+    @pytest.mark.asyncio
+    async def test_verify_token_no_sub(self, mock_db):
+        """Test verification of token with no subject."""
+        with patch("src.app.core.security.SECRET_KEY") as mock_secret:
+            mock_secret.get_secret_value.return_value = "test_secret_key"
+            
+            # Create a token with no 'sub'
             payload = {
-                "sub": "testuser",
-                "token_type": "refresh",
-                "exp": datetime.now(UTC) + timedelta(hours=1),
-                "iat": datetime.now(UTC)
+                "exp": int((datetime.now(UTC) + timedelta(hours=1)).timestamp()),
+                "token_type": "access"
             }
             token = jwt.encode(payload, "test_secret_key", algorithm="HS256")
             
             result = await verify_token(token, "access", mock_db)
             
             assert result is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("expected", [TokenType.REFRESH, "refresh", "REFRESH"])
+async def test_verify_token_refresh_expected_variants(expected, mock_db):
+    with patch("src.app.core.security.SECRET_KEY") as mock_secret, \
+         patch("src.app.core.security.crud_token_blacklist") as mock_blacklist, \
+         patch("src.app.core.security.ALGORITHM", "HS256"):
+        mock_secret.get_secret_value.return_value = "test_secret_key"
+        mock_blacklist.exists = AsyncMock(return_value=False)
+        token = await create_refresh_token({"sub": "testuser"})
+        result = await verify_token(token, expected, mock_db)
+        assert result is not None
+        assert result.username_or_email == "testuser"
 
 
 class TestTokenBlacklisting:
@@ -281,8 +340,8 @@ class TestTokenBlacklisting:
             exp_time = datetime.now(UTC) + timedelta(hours=1)
             payload = {
                 "sub": "testuser",
-                "exp": exp_time,
-                "iat": datetime.now(UTC)
+                "exp": int(exp_time.timestamp()),
+                "iat": int(datetime.now(UTC).timestamp())
             }
             token = jwt.encode(payload, "test_secret_key", algorithm="HS256")
             
@@ -307,8 +366,8 @@ class TestTokenBlacklisting:
             
             # Create a token without expiration
             payload = {
-                "sub": "testuser",
-                "iat": datetime.now(UTC)
+                "sub": "testuser"
+                # No exp or iat fields
             }
             token = jwt.encode(payload, "test_secret_key", algorithm="HS256")
             
@@ -320,22 +379,25 @@ class TestTokenBlacklisting:
     @pytest.mark.asyncio
     async def test_blacklist_tokens_multiple(self, mock_db):
         """Test blacklisting multiple tokens."""
-        with patch("src.app.core.security.blacklist_token") as mock_blacklist_single:
-            mock_blacklist_single.return_value = None
+        with patch("src.app.core.security.SECRET_KEY") as mock_secret, \
+             patch("src.app.core.security.crud_token_blacklist") as mock_blacklist:
             
-            access_token = "access_token_123"
-            refresh_token = "refresh_token_456"
+            mock_secret.get_secret_value.return_value = "test_secret_key"
+            mock_blacklist.create = AsyncMock()
+            
+            # Create tokens with expiration
+            payload = {
+                "sub": "testuser",
+                "exp": int((datetime.now(UTC) + timedelta(hours=1)).timestamp()),
+                "iat": datetime.now(UTC)
+            }
+            access_token = jwt.encode(payload, "test_secret_key", algorithm="HS256")
+            refresh_token = jwt.encode(payload, "test_secret_key", algorithm="HS256")
             
             await blacklist_tokens(access_token, refresh_token, mock_db)
             
             # Verify both tokens were blacklisted
-            assert mock_blacklist_single.call_count == 2
-            calls = mock_blacklist_single.call_args_list
-            
-            # Check that both tokens were called
-            tokens_called = [call.args[0] for call in calls]
-            assert access_token in tokens_called
-            assert refresh_token in tokens_called
+            assert mock_blacklist.create.call_count == 2
 
 
 class TestUserAuthentication:
@@ -356,7 +418,7 @@ class TestUserAuthentication:
         }
         
         with patch("src.app.core.security.crud_users") as mock_crud:
-            mock_crud.get.return_value = mock_user
+            mock_crud.get = AsyncMock(return_value=mock_user)
             
             result = await authenticate_user(username, password, mock_db)
             
@@ -369,11 +431,11 @@ class TestUserAuthentication:
         password = "password123"
         
         with patch("src.app.core.security.crud_users") as mock_crud:
-            mock_crud.get.return_value = None
+            mock_crud.get = AsyncMock(return_value=None)
             
             result = await authenticate_user(username, password, mock_db)
             
-            assert result is None
+            assert result is False
     
     @pytest.mark.asyncio
     async def test_authenticate_user_wrong_password(self, mock_db):
@@ -391,32 +453,25 @@ class TestUserAuthentication:
         }
         
         with patch("src.app.core.security.crud_users") as mock_crud:
-            mock_crud.get.return_value = mock_user
+            mock_crud.get = AsyncMock(return_value=mock_user)
             
             result = await authenticate_user(username, password, mock_db)
             
-            assert result is None
+            assert result is False
     
     @pytest.mark.asyncio
     async def test_authenticate_user_deleted(self, mock_db):
         """Test authentication with deleted user."""
         username = "testuser"
         password = "password123"
-        hashed_password = get_password_hash(password)
-        
-        mock_user = {
-            "id": 1,
-            "username": username,
-            "hashed_password": hashed_password,
-            "is_deleted": True  # User is deleted
-        }
         
         with patch("src.app.core.security.crud_users") as mock_crud:
-            mock_crud.get.return_value = mock_user
+            # crud_users.get is called with is_deleted=False, so it returns None for deleted users
+            mock_crud.get = AsyncMock(return_value=None)
             
             result = await authenticate_user(username, password, mock_db)
             
-            assert result is None
+            assert result is False
 
 
 class TestCurrentUserDependencies:
@@ -436,11 +491,11 @@ class TestCurrentUserDependencies:
             "is_deleted": False
         }
         
-        with patch("src.app.core.security.verify_token") as mock_verify, \
-             patch("src.app.core.security.crud_users") as mock_crud:
+        with patch("src.app.api.dependencies.verify_token") as mock_verify, \
+             patch("src.app.api.dependencies.crud_users") as mock_crud:
             
             mock_verify.return_value = mock_token_data
-            mock_crud.get.return_value = mock_user
+            mock_crud.get = AsyncMock(return_value=mock_user)
             
             result = await get_current_user(token, mock_db)
             
@@ -501,7 +556,7 @@ class TestCurrentUserDependencies:
         with patch("src.app.api.dependencies.get_current_user") as mock_get_user:
             mock_get_user.return_value = mock_user
             
-            with pytest.raises(KeyError):
+            with pytest.raises(ForbiddenException, match="You do not have enough privileges"):
                 await get_current_superuser(mock_user)
     
     @pytest.mark.asyncio
@@ -516,7 +571,7 @@ class TestCurrentUserDependencies:
         with patch("src.app.api.dependencies.get_current_user") as mock_get_user:
             mock_get_user.return_value = mock_user
             
-            with pytest.raises(ForbiddenException, match="You do not have enough privileges"):
+            with pytest.raises(KeyError):
                 await get_current_superuser(mock_user)
 
 

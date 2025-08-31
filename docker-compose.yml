@@ -30,9 +30,13 @@ services:
       dockerfile: Dockerfile.test
     env_file:
       - ./src/.env
+    environment:
+      - PYTHONPATH=/code/src
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - ./src:/code/src
       - ./tests:/code/tests
@@ -62,6 +66,12 @@ services:
     # -------- replace with comment to run migrations with docker --------
     expose:
       - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-web_test}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     # ports:
     #  - 5432:5432
 
@@ -71,6 +81,12 @@ services:
       - redis-data:/data
     expose:
       - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   #-------- uncomment to run with pgadmin --------
   # pgadmin:
