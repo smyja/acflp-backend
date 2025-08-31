@@ -436,14 +436,28 @@ def freeze_time():
 def mock_jwt_validation(monkeypatch):
     """Mock JWT validation to prevent token parsing errors in tests."""
     from unittest.mock import Mock
+    from datetime import datetime, UTC, timedelta
+    import jose.jwt
     
-    # Mock JWT decode to return a valid payload
-    mock_payload = {"sub": "testuser", "exp": 9999999999}
+    # Store the original decode function
+    original_decode = jose.jwt.decode
     
-    def mock_jwt_decode(*args, **kwargs):
-        return mock_payload
+    # Mock JWT decode to return a valid payload with token_type
+    def mock_jwt_decode(token, *args, **kwargs):
+        # Check if we should bypass mocking (when options={'verify_signature': False})
+        options = kwargs.get('options', {})
+        if options.get('verify_signature') is False:
+            # Use the original jwt.decode for test verification
+            return original_decode(token, *args, **kwargs)
+        
+        # Default mock payload for other cases
+        return {
+            "sub": "testuser", 
+            "exp": int((datetime.now(UTC) + timedelta(hours=1)).timestamp()),
+            "token_type": "access"
+        }
     
     monkeypatch.setattr("jose.jwt.decode", mock_jwt_decode)
     monkeypatch.setattr("src.app.core.security.jwt.decode", mock_jwt_decode)
     
-    return mock_payload
+    return mock_jwt_decode

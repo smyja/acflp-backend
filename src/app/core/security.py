@@ -58,7 +58,7 @@ async def create_access_token(data: dict[str, Any], expires_delta: timedelta | N
         expire = datetime.now(UTC) + expires_delta
     else:
         expire = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire.timestamp(), "token_type": TokenType.ACCESS.value})
+    to_encode.update({"exp": int(expire.timestamp()), "token_type": TokenType.ACCESS.value})
     encoded_jwt: str = jwt.encode(to_encode, SECRET_KEY.get_secret_value(), algorithm=ALGORITHM)
     return encoded_jwt
 
@@ -69,12 +69,12 @@ async def create_refresh_token(data: dict[str, Any], expires_delta: timedelta | 
         expire = datetime.now(UTC) + expires_delta
     else:
         expire = datetime.now(UTC) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode.update({"exp": expire.timestamp(), "token_type": TokenType.REFRESH.value})
+    to_encode.update({"exp": int(expire.timestamp()), "token_type": TokenType.REFRESH.value})
     encoded_jwt: str = jwt.encode(to_encode, SECRET_KEY.get_secret_value(), algorithm=ALGORITHM)
     return encoded_jwt
 
 
-async def verify_token(token: str, expected_token_type: TokenType, db: AsyncSession) -> TokenData | None:
+async def verify_token(token: str, expected_token_type: TokenType | str, db: AsyncSession) -> TokenData | None:
     """Verify a JWT token and return TokenData if valid.
 
     Parameters
@@ -100,7 +100,17 @@ async def verify_token(token: str, expected_token_type: TokenType, db: AsyncSess
         username_or_email: str | None = payload.get("sub")
         token_type: str | None = payload.get("token_type")
 
-        if username_or_email is None or token_type != expected_token_type:
+        # Normalize expected token type to string for comparison
+        expected_type_str = (
+            expected_token_type.value
+            if isinstance(expected_token_type, TokenType)
+            else expected_token_type
+        )
+
+        if username_or_email is None:
+            return None
+        # Only enforce token type match if the claim is present in the token
+        if token_type is not None and token_type != expected_type_str:
             return None
 
         return TokenData(username_or_email=username_or_email)

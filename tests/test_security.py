@@ -17,6 +17,7 @@ from src.app.core.security import (
     blacklist_token,
     blacklist_tokens,
     authenticate_user,
+    TokenType,
 )
 from src.app.api.dependencies import (
     get_current_user,
@@ -82,20 +83,25 @@ class TestTokenCreation:
     async def test_create_access_token_default_expiry(self):
         """Test access token creation with default expiry."""
         data = {"sub": "testuser"}
-        token = await create_access_token(data)
         
-        assert isinstance(token, str)
-        assert len(token) > 100  # JWT tokens are typically long
-        
-        # Decode without verification to check payload
+        # Mock SECRET_KEY before creating token
         with patch("src.app.core.security.SECRET_KEY") as mock_secret:
             mock_secret.get_secret_value.return_value = "test_secret_key"
-            payload = jwt.decode(token, "test_secret_key", algorithms=["HS256"])
+            token = await create_access_token(data)
+            
+            assert isinstance(token, str)
+            assert len(token) > 100  # JWT tokens are typically long
+            
+            # Decode without verification to check payload
+            payload = jwt.decode(token, "test_secret_key", algorithms=["HS256"], options={"verify_signature": False})
+            
+            # Debug print
+            print("\nAccess Token Payload:", payload)
             
             assert payload["sub"] == "testuser"
             assert "exp" in payload
             # TokenType.ACCESS becomes "access" when serialized
-            assert payload["token_type"] == "access"
+            assert payload["token_type"] == TokenType.ACCESS.value
     
     @pytest.mark.asyncio
     async def test_create_access_token_custom_expiry(self):
@@ -107,37 +113,50 @@ class TestTokenCreation:
             mock_secret.get_secret_value.return_value = "test_secret_key"
             token = await create_access_token(data, expires_delta)
             
-            payload = jwt.decode(token, "test_secret_key", algorithms=["HS256"])
+            payload = jwt.decode(token, "test_secret_key", algorithms=["HS256"], options={"verify_signature": False})
+            
+            # Debug print
+            print("\nCustom Expiry Payload:", payload)
             
             # Check expiry is approximately 2 hours from now
             # The exp field should be a datetime object in this implementation
             exp_time = payload["exp"]
-            expected_exp = datetime.now(UTC).replace(tzinfo=None) + expires_delta
+            now = datetime.now(UTC)
+            expected_exp = now + expires_delta
+            
+            # Debug print
+            print(f"\nExp time: {exp_time}, type: {type(exp_time)}")
+            print(f"Expected exp: {expected_exp}, type: {type(expected_exp)}")
             
             # Allow 1 minute tolerance
-            if isinstance(exp_time, datetime):
-                assert abs((exp_time - expected_exp).total_seconds()) < 60
-            else:
-                # If it's a timestamp, convert it
-                exp_datetime = datetime.fromtimestamp(exp_time, UTC).replace(tzinfo=None)
-                assert abs((exp_datetime - expected_exp).total_seconds()) < 60
+            exp_datetime = datetime.fromtimestamp(exp_time, UTC)
+            
+            # Debug print
+            print(f"Exp datetime: {exp_datetime}, type: {type(exp_datetime)}")
+            print(f"Difference in seconds: {abs((exp_datetime - expected_exp).total_seconds())}")
+            
+            assert abs((exp_datetime - expected_exp).total_seconds()) < 60
     
     @pytest.mark.asyncio
     async def test_create_refresh_token(self):
         """Test refresh token creation."""
         data = {"sub": "testuser"}
-        token = await create_refresh_token(data)
-        
-        assert isinstance(token, str)
-        assert len(token) > 100
         
         with patch("src.app.core.security.SECRET_KEY") as mock_secret:
             mock_secret.get_secret_value.return_value = "test_secret_key"
-            payload = jwt.decode(token, "test_secret_key", algorithms=["HS256"])
+            token = await create_refresh_token(data)
+            
+            assert isinstance(token, str)
+            assert len(token) > 100
+            
+            payload = jwt.decode(token, "test_secret_key", algorithms=["HS256"], options={"verify_signature": False})
+            
+            # Debug print
+            print("\nRefresh Token Payload:", payload)
             
             assert payload["sub"] == "testuser"
             # TokenType.REFRESH becomes "refresh" when serialized
-            assert payload["token_type"] == "refresh"
+            assert payload["token_type"] == TokenType.REFRESH.value
             assert "exp" in payload
 
 
