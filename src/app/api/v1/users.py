@@ -43,7 +43,12 @@ async def write_user(
         raise NotFoundException("Failed to create user")
 
     # Extract user ID from created_user (could be dict or object)
-    user_id = created_user.id if hasattr(created_user, "id") else created_user.get("id")
+    if hasattr(created_user, "id"):
+        user_id = getattr(created_user, "id", None)
+    elif isinstance(created_user, dict):
+        user_id = created_user.get("id")
+    else:
+        user_id = None
     if user_id is None:
         raise NotFoundException("Created user has no ID")
 
