@@ -25,20 +25,20 @@ def upgrade() -> None:
     # Check if index exists before dropping
     connection = op.get_bind()
     inspector = sa.inspect(connection)
-    
+
     # Check if token_blacklist table exists
     if "token_blacklist" in inspector.get_table_names():
         # Check if index exists before dropping
         indexes = inspector.get_indexes("token_blacklist")
-        index_names = [idx['name'] for idx in indexes]
+        index_names = [idx["name"] for idx in indexes]
         if "ix_token_blacklist_token" in index_names:
             op.drop_index(op.f("ix_token_blacklist_token"), table_name="token_blacklist")
         op.drop_table("token_blacklist")
-    
+
     # Check if rate_limit table exists before adding constraint
     if "rate_limit" in inspector.get_table_names():
         op.create_unique_constraint(None, "rate_limit", ["id"])
-    
+
     # Check if task table exists before adding columns
     if "task" in inspector.get_table_names():
         op.add_column("task", sa.Column("assignee_id", sa.Integer(), nullable=True))
@@ -49,7 +49,7 @@ def upgrade() -> None:
         op.create_index(op.f("ix_task_translated_by_user_id"), "task", ["translated_by_user_id"], unique=False)
         op.create_foreign_key(None, "task", "user", ["assignee_id"], ["id"])
         op.create_foreign_key(None, "task", "user", ["translated_by_user_id"], ["id"])
-    
+
     # Check if tier table exists before adding constraint
     if "tier" in inspector.get_table_names():
         op.create_unique_constraint(None, "tier", ["id"])
