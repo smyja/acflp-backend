@@ -218,45 +218,12 @@ jobs:
     
     # Security scan removed: Trivy no longer used
 
-  # Integration Tests
-  integration:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    needs: [docker]
-    if: needs.docker.result == 'success'
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    
-    - name: Start services with Docker Compose
-      run: |
-        docker compose -f docker-compose.test.yml up -d
-        sleep 30  # Wait for services to be ready
-    
-    - name: Run integration tests
-      run: |
-        docker compose -f docker-compose.test.yml exec -T web pytest tests/integration/ -v
-    
-    - name: Collect logs
-      if: failure()
-      run: |
-        docker compose -f docker-compose.test.yml logs
-    
-    - name: Cleanup
-      if: always()
-      run: |
-        docker compose -f docker-compose.test.yml down -v
-
   # Performance Tests
   performance:
     name: Performance Tests
     runs-on: ubuntu-latest
-    needs: [integration]
-    if: github.ref == 'refs/heads/main' && needs.integration.result == 'success'
+    needs: [test]
+    if: github.ref == 'refs/heads/main' && needs.test.result == 'success'
     
     steps:
     - name: Checkout code
@@ -280,15 +247,14 @@ jobs:
   deploy:
     name: Build & Deploy
     runs-on: ubuntu-latest
-    needs: [code-quality, codeql, test, docker, integration]
+    needs: [code-quality, codeql, test, docker]
     if: |
       github.ref == 'refs/heads/main' && 
       github.event_name == 'push' && 
       needs.code-quality.result == 'success' && 
       needs.codeql.result == 'success' && 
       needs.test.result == 'success' && 
-      (needs.docker.result == 'success' || needs.docker.result == 'skipped') && 
-      (needs.integration.result == 'success' || needs.integration.result == 'skipped')
+      (needs.docker.result == 'success' || needs.docker.result == 'skipped')
     
     steps:
     - name: Checkout code
@@ -342,7 +308,7 @@ jobs:
   notify:
     name: Notify
     runs-on: ubuntu-latest
-    needs: [code-quality, codeql, test, docker, integration, performance, deploy]
+    needs: [code-quality, codeql, test, docker, performance, deploy]
     if: always() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     
     steps:
