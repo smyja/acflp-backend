@@ -6,10 +6,8 @@ from pydantic import BaseModel, Field
 
 from ..core.security import get_password_hash
 from ..models.task import Task
-
 from ..models.user import User
 from ..schemas.task import TaskUpdate
-
 from ..schemas.user import UserCreate, UserUpdate
 
 

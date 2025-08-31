@@ -1,13 +1,15 @@
+import logging
 from typing import Annotated, Any, cast
 
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..core.config import settings
 from ..core.db.database import async_get_db
 from ..core.exceptions.http_exceptions import ForbiddenException, UnauthorizedException
 from ..core.security import TokenType, oauth2_scheme, verify_token
 from ..crud.crud_users import crud_users
+
+logger = logging.getLogger(__name__)
 
 
 async def get_current_user(

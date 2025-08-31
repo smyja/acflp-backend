@@ -13,7 +13,6 @@ from fastapi.openapi.utils import get_openapi
 import redis.asyncio as redis
 
 from ..api.dependencies import get_current_superuser
-
 from ..middleware.client_cache_middleware import ClientCacheMiddleware
 from ..models import *  # noqa: F403
 from .config import (
@@ -25,11 +24,12 @@ from .config import (
     EnvironmentSettings,
     RedisCacheSettings,
     RedisQueueSettings,
+    RedisRateLimiterSettings,
     settings,
 )
 from .db.database import Base
 from .db.database import async_engine as engine
-from .utils import cache, queue
+from .utils import cache, queue, rate_limit
 
 
 # -------------- database --------------
@@ -57,6 +57,17 @@ async def create_redis_queue_pool() -> None:
 async def close_redis_queue_pool() -> None:
     if queue.pool is not None:
         await queue.pool.close()
+
+
+# -------------- rate limit --------------
+async def create_redis_rate_limit_pool() -> None:
+    rate_limit.pool = redis.ConnectionPool.from_url(settings.REDIS_RATE_LIMIT_URL)
+    rate_limit.client = redis.Redis(connection_pool=rate_limit.pool)
+
+
+async def close_redis_rate_limit_pool() -> None:
+    if rate_limit.client is not None:
+        await rate_limit.client.close()
 
 
 # -------------- application --------------
