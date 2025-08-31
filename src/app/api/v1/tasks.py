@@ -1,4 +1,4 @@
-from typing import Any, cast
+from typing import Any
 
 from arq.jobs import Job as ArqJob
 from fastapi import APIRouter, Depends, HTTPException
