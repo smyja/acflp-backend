@@ -131,7 +131,7 @@ async def google_callback(
 
         # Generate tokens
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        username = user.username if hasattr(user, 'username') else user["username"]
+        username = user.username if hasattr(user, "username") else user["username"]
         access_token = await create_access_token(data={"sub": username}, expires_delta=access_token_expires)
 
         refresh_token = await create_refresh_token(data={"sub": username})

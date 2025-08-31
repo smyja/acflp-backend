@@ -57,7 +57,7 @@ async def get_next_task(
             assignee_id=current_user["id"],
             translated_text=None,
             translated_by_user_id=None,
-            translated_at=None
+            translated_at=None,
         ),
         id=task_row.id,
     )
