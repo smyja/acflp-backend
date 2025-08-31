@@ -114,7 +114,7 @@ COPY pyproject.toml uv.lock* ./
 # Install only production dependencies
 RUN uv venv /opt/venv \
     && . /opt/venv/bin/activate \
-    && uv pip install --no-dev .
+    && uv pip install .
 
 # ============================================================================
 # Production stage - Optimized for production deployment
