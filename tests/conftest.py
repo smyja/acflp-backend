@@ -64,6 +64,153 @@ def mock_redis():
     return mock_redis
 
 
+@pytest.fixture(scope="session")
+def event_loop():
+    """Create an instance of the default event loop for the test session."""
+    import asyncio
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_cache_client():
+    """Initialize cache client for tests to prevent MissingClientError."""
+    from app.core.utils import cache
+    from unittest.mock import AsyncMock, Mock
+    
+    # Create a mock Redis client for tests
+    mock_client = Mock()
+    mock_client.get = AsyncMock(return_value=None)
+    mock_client.set = AsyncMock(return_value=True)
+    mock_client.delete = AsyncMock(return_value=True)
+    mock_client.exists = AsyncMock(return_value=False)
+    mock_client.expire = AsyncMock(return_value=True)
+    mock_client.keys = AsyncMock(return_value=[])
+    mock_client.pipeline = Mock()
+    mock_client.pipeline.return_value.set = Mock()
+    mock_client.pipeline.return_value.expire = Mock()
+    mock_client.pipeline.return_value.execute = AsyncMock(return_value=[])
+    
+    # Set the mock client globally for tests
+    cache.client = mock_client
+    
+    yield
+    
+    # Clean up after tests
+    cache.client = None
+
+
+@pytest.fixture(scope="function")
+async def async_db_session():
+    """Create a fresh async database session for each test with proper cleanup."""
+    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+    from sqlalchemy.orm import sessionmaker
+    from app.core.db.database import Base
+    from app.core.config import settings
+    
+    # Create test database engine
+    test_engine = create_async_engine(
+        settings.POSTGRES_ASYNC_PREFIX + settings.POSTGRES_URI,
+        echo=False
+    )
+    
+    # Create all tables
+    async with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    # Create session
+    TestSessionLocal = sessionmaker(
+        test_engine, class_=AsyncSession, expire_on_commit=False
+    )
+    
+    async with TestSessionLocal() as session:
+        yield session
+    
+    # Clean up - drop all tables with CASCADE
+    async with test_engine.begin() as conn:
+        await conn.run_sync(lambda sync_conn: Base.metadata.drop_all(sync_conn, checkfirst=True))
+    
+    await test_engine.dispose()
+
+
+@pytest.fixture
+async def test_user_factory(async_db_session):
+    """Factory for creating test users with realistic data."""
+    from app.models.user import User
+    from app.core.security import get_password_hash
+    
+    created_users = []
+    
+    async def _create_user(
+        name: str = None,
+        username: str = None, 
+        email: str = None,
+        password: str = "testpassword123",
+        is_superuser: bool = False
+    ):
+        user = User(
+            name=name or fake.name(),
+            username=username or fake.user_name(),
+            email=email or fake.email(),
+            hashed_password=get_password_hash(password),
+            is_superuser=is_superuser
+        )
+        async_db_session.add(user)
+        await async_db_session.commit()
+        await async_db_session.refresh(user)
+        created_users.append(user)
+        return user
+    
+    yield _create_user
+    
+    # Cleanup
+    for user in created_users:
+        await async_db_session.delete(user)
+    await async_db_session.commit()
+
+
+@pytest.fixture
+async def test_task_factory(async_db_session):
+    """Factory for creating test tasks with realistic data."""
+    from app.models.task import Task
+    
+    created_tasks = []
+    
+    async def _create_task(
+        created_by_user_id: int,
+        title: str = None,
+        text: str = None,
+        source_language: str = "en",
+        target_language: str = "es", 
+        task_type: str = "text_translation",
+        status: str = "pending",
+        assignee_id: int = None
+    ):
+        task = Task(
+            created_by_user_id=created_by_user_id,
+            title=title or fake.sentence(),
+            text=text or fake.text(),
+            source_language=source_language,
+            target_language=target_language,
+            task_type=task_type,
+            status=status,
+            assignee_id=assignee_id
+        )
+        async_db_session.add(task)
+        await async_db_session.commit()
+        await async_db_session.refresh(task)
+        created_tasks.append(task)
+        return task
+    
+    yield _create_task
+    
+    # Cleanup
+    for task in created_tasks:
+        await async_db_session.delete(task)
+    await async_db_session.commit()
+
+
 @pytest.fixture
 def sample_user_data():
     """Generate sample user data for tests."""
@@ -207,3 +354,102 @@ def superuser_dict():
         "name": "Admin User",
         "is_superuser": True,
     }
+
+
+@pytest.fixture
+def async_client():
+    """Create a test client for API testing."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+    
+    with TestClient(app) as client:
+        yield client
+
+
+@pytest.fixture
+def authenticated_client(async_client):
+    """Create an authenticated HTTP client with a test user."""
+    # For now, return the client with mock authentication headers
+    # This will be improved when we implement proper auth testing
+    mock_token = "mock_jwt_token_for_testing"
+    async_client.headers.update({"Authorization": f"Bearer {mock_token}"})
+    
+    # Mock user data
+    mock_user = {
+        "id": 1,
+        "username": "testuser",
+        "email": "test@example.com",
+        "is_superuser": False
+    }
+    
+    yield async_client, mock_user
+
+
+@pytest.fixture
+def superuser_client(async_client):
+    """Create an authenticated HTTP client with a superuser."""
+    # Mock superuser authentication
+    mock_token = "mock_superuser_jwt_token_for_testing"
+    async_client.headers.update({"Authorization": f"Bearer {mock_token}"})
+    
+    # Mock superuser data
+    mock_superuser = {
+        "id": 2,
+        "username": "superuser",
+        "email": "super@example.com",
+        "is_superuser": True
+    }
+    
+    yield async_client, mock_superuser
+
+
+@pytest.fixture
+def mock_external_api(monkeypatch):
+    """Mock external API calls for testing."""
+    from unittest.mock import AsyncMock
+    import httpx
+    
+    mock_response = AsyncMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {"status": "success", "data": "mocked"}
+    
+    mock_client = AsyncMock()
+    mock_client.get.return_value = mock_response
+    mock_client.post.return_value = mock_response
+    mock_client.put.return_value = mock_response
+    mock_client.delete.return_value = mock_response
+    
+    monkeypatch.setattr("httpx.AsyncClient", lambda **kwargs: mock_client)
+    
+    return mock_client
+
+
+@pytest.fixture
+def mock_database_error(monkeypatch):
+    """Mock database errors for testing error scenarios."""
+    from unittest.mock import AsyncMock
+    from sqlalchemy.exc import SQLAlchemyError
+    
+    def _mock_error(operation="execute"):
+        mock_func = AsyncMock(side_effect=SQLAlchemyError("Database error"))
+        monkeypatch.setattr(f"sqlalchemy.ext.asyncio.AsyncSession.{operation}", mock_func)
+        return mock_func
+    
+    return _mock_error
+
+
+@pytest.fixture
+def freeze_time():
+    """Fixture for freezing time in tests."""
+    from unittest.mock import patch
+    from datetime import datetime, timezone
+    
+    def _freeze(frozen_time=None):
+        if frozen_time is None:
+            frozen_time = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        
+        mock_datetime = patch('app.models.task.datetime')
+        mock_utils_datetime = patch('app.core.utils.datetime')
+        return mock_datetime, mock_utils_datetime
+    
+    return _freeze

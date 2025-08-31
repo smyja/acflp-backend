@@ -137,18 +137,18 @@ class TestGetNextTask:
             mock_crud.update = AsyncMock(return_value=None)
             mock_crud.get = AsyncMock(return_value=sample_task_read)
             
-            with patch("app.api.v1.tasks_api.db.execute") as mock_execute:
-                mock_result = Mock()
-                mock_task_row = Mock()
-                mock_task_row.id = 1
-                mock_result.scalar_one_or_none = Mock(return_value=mock_task_row)
-                mock_execute.return_value = mock_result
-                
-                result = await get_next_task(request, current_user_dict, mock_db)
-                
-                assert result == sample_task_read
-                mock_crud.update.assert_called_once()
-                mock_crud.get.assert_called_once()
+            # Mock the database execute method
+            mock_result = Mock()
+            mock_task_row = Mock()
+            mock_task_row.id = 1
+            mock_result.scalar_one_or_none = Mock(return_value=mock_task_row)
+            mock_db.execute = AsyncMock(return_value=mock_result)
+            
+            result = await get_next_task(request, current_user_dict, mock_db)
+            
+            assert result == sample_task_read
+            mock_crud.update.assert_called_once()
+            mock_crud.get.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_get_next_task_already_in_progress(self, mock_db, current_user_dict):
@@ -170,13 +170,13 @@ class TestGetNextTask:
         with patch("app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get_multi = AsyncMock(return_value={"data": []})
             
-            with patch("app.api.v1.tasks_api.db.execute") as mock_execute:
-                mock_result = Mock()
-                mock_result.scalar_one_or_none = Mock(return_value=None)
-                mock_execute.return_value = mock_result
-                
-                with pytest.raises(NotFoundException, match="No available tasks found"):
-                    await get_next_task(request, current_user_dict, mock_db)
+            # Mock the database execute method to return no tasks
+            mock_result = Mock()
+            mock_result.scalar_one_or_none = Mock(return_value=None)
+            mock_db.execute = AsyncMock(return_value=mock_result)
+            
+            with pytest.raises(NotFoundException, match="No available tasks found"):
+                await get_next_task(request, current_user_dict, mock_db)
 
 
 class TestCreateTaskAPI:
@@ -290,7 +290,7 @@ class TestGetTaskAPI:
         with patch("app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get = AsyncMock(return_value=sample_task_read)
             
-            result = await get_task_api(request, task_id, current_user_dict, mock_db)
+            result = await get_task_api(request, id=task_id, current_user=current_user_dict, db=mock_db)
             
             assert result == sample_task_read
 
@@ -304,7 +304,7 @@ class TestGetTaskAPI:
         with patch("app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get = AsyncMock(return_value=sample_task_read)
             
-            result = await get_task_api(request, task_id, superuser_dict, mock_db)
+            result = await get_task_api(request, id=task_id, current_user=superuser_dict, db=mock_db)
             
             assert result == sample_task_read
 
@@ -320,7 +320,7 @@ class TestGetTaskAPI:
             mock_crud.get = AsyncMock(return_value=sample_task_read)
             
             with pytest.raises(ForbiddenException):
-                await get_task_api(request, task_id, current_user_dict, mock_db)
+                await get_task_api(request, id=task_id, current_user=current_user_dict, db=mock_db)
 
     @pytest.mark.asyncio
     async def test_get_task_not_found(self, mock_db, current_user_dict):
@@ -332,7 +332,7 @@ class TestGetTaskAPI:
             mock_crud.get = AsyncMock(return_value=None)
             
             with pytest.raises(NotFoundException, match="Task not found"):
-                await get_task_api(request, task_id, current_user_dict, mock_db)
+                await get_task_api(request, id=task_id, current_user=current_user_dict, db=mock_db)
 
 
 class TestUpdateTask:
@@ -346,8 +346,12 @@ class TestUpdateTask:
         task_update = TaskUpdate(title="Updated Task Title")
         sample_task_read.created_by_user_id = current_user_dict["id"]
         
+        # Create a mock task object with the correct attribute
+        mock_task = Mock()
+        mock_task.created_by_user_id = current_user_dict["id"]
+        
         with patch("app.api.v1.tasks_api.crud_tasks") as mock_crud:
-            mock_crud.get = AsyncMock(return_value={"created_by_user_id": current_user_dict["id"]})
+            mock_crud.get = AsyncMock(return_value=mock_task)
             mock_crud.update = AsyncMock(return_value=sample_task_read)
             
             result = await update_task(request, task_id, task_update, current_user_dict, mock_db)
@@ -363,8 +367,12 @@ class TestUpdateTask:
         task_update = TaskUpdate(title="Updated Task Title")
         current_user_dict["is_superuser"] = False
         
+        # Create a mock task object with different owner
+        mock_task = Mock()
+        mock_task.created_by_user_id = 999
+        
         with patch("app.api.v1.tasks_api.crud_tasks") as mock_crud:
-            mock_crud.get = AsyncMock(return_value={"created_by_user_id": 999})
+            mock_crud.get = AsyncMock(return_value=mock_task)
             
             with pytest.raises(ForbiddenException):
                 await update_task(request, task_id, task_update, current_user_dict, mock_db)
@@ -428,8 +436,12 @@ class TestDeleteTask:
         request = Mock(spec=Request)
         task_id = 1
         
+        # Create a mock task object with the correct attribute
+        mock_task = Mock()
+        mock_task.created_by_user_id = current_user_dict["id"]
+        
         with patch("app.api.v1.tasks_api.crud_tasks") as mock_crud:
-            mock_crud.get = AsyncMock(return_value={"created_by_user_id": current_user_dict["id"]})
+            mock_crud.get = AsyncMock(return_value=mock_task)
             mock_crud.delete = AsyncMock(return_value=None)
             
             result = await delete_task(request, task_id, current_user_dict, mock_db)
@@ -444,8 +456,12 @@ class TestDeleteTask:
         task_id = 1
         current_user_dict["is_superuser"] = False
         
+        # Create a mock task object with different owner
+        mock_task = Mock()
+        mock_task.created_by_user_id = 999
+        
         with patch("app.api.v1.tasks_api.crud_tasks") as mock_crud:
-            mock_crud.get = AsyncMock(return_value={"created_by_user_id": 999})
+            mock_crud.get = AsyncMock(return_value=mock_task)
             
             with pytest.raises(ForbiddenException):
                 await delete_task(request, task_id, current_user_dict, mock_db)

@@ -73,6 +73,7 @@ packages = ["src"]
 target-version = "py311"
 line-length = 120
 fix = true
+src = ["src"]
 
 [tool.ruff.lint]
 select = [
@@ -88,6 +89,14 @@ select = [
     "UP", # pyupgrade
     # https://docs.astral.sh/ruff/rules/#isort-i
     "I", # isort
+    # https://docs.astral.sh/ruff/rules/#flake8-bandit-s
+    "S", # flake8-bandit (security)
+    # https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
+    "B", # flake8-bugbear
+    # https://docs.astral.sh/ruff/rules/#flake8-simplify-sim
+    "SIM", # flake8-simplify
+    # https://docs.astral.sh/ruff/rules/#pep8-naming-n
+    "N", # pep8-naming
 ]
 ignore = [
     # https://docs.astral.sh/ruff/rules/#pycodestyle-e-w
@@ -96,13 +105,214 @@ ignore = [
     "UP006", # use-pep585-annotation
     "UP007", # use-pep604-annotation
     "E741",  # Ambiguous variable name
+    # Security exceptions for test files
+    "S101", # Use of assert detected (needed for tests)
+    "S311", # Standard pseudo-random generators are not suitable for security/cryptographic purposes
     # "UP035", # deprecated-assertion
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101", # Use of assert detected
+    "S106", # Possible hardcoded password
+    "S108", # Probable insecure usage of temp file/directory
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+force-sort-within-sections = true
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["src/app"]
+omit = [
+    "src/app/__init__.py",
+    "src/app/core/config.py",
+    "*/tests/*",
+    "*/venv/*",
+    "*/.venv/*",
+    "*/migrations/*",
+    "*/alembic/*",
+]
+branch = true
+parallel = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+show_missing = true
+skip_covered = false
+precision = 2
+fail_under = 80
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+# MyPy configuration
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+show_column_numbers = true
+show_error_context = true
+pretty = true
+color_output = true
+error_summary = true
+
+# MyPy path configuration
+mypy_path = "src"
+packages = ["app"]
+
+[[tool.mypy.overrides]]
+module = [
+    "faker.*",
+    "uvicorn.*",
+    "gunicorn.*",
+    "alembic.*",
+    "sqlalchemy.*",
+    "asyncpg.*",
+    "redis.*",
+    "arq.*",
+    "crudadmin.*",
+    "fastcrud.*",
+]
+ignore_missing_imports = true
+
+# Pytest configuration
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = """
+    --strict-markers
+    --strict-config
+    --disable-warnings
+    --tb=short
+    --cov=src/app
+    --cov-report=term-missing
+    --cov-report=html
+    --cov-report=xml
+    --cov-fail-under=80
+    --asyncio-mode=auto
+"""
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m "not slow"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "e2e: marks tests as end-to-end tests",
+    "security: marks tests as security tests",
+    "performance: marks tests as performance tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+asyncio_mode = "auto"
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = [
     "F401", # unused import
     "F403", # star imports
+]
+
+# Bandit security configuration
+[tool.bandit]
+skips = ["B101", "B601"]
+exclude_dirs = ["tests", "migrations"]
+
+[tool.bandit.assert_used]
+skips = ["*_test.py", "test_*.py"]
+
+# Pydocstyle configuration
+[tool.pydocstyle]
+inherit = false
+ignore = [
+    "D100", # Missing docstring in public module
+    "D101", # Missing docstring in public class
+    "D102", # Missing docstring in public method
+    "D103", # Missing docstring in public function
+    "D104", # Missing docstring in public package
+    "D105", # Missing docstring in magic method
+    "D107", # Missing docstring in __init__
+    "D200", # One-line docstring should fit on one line
+    "D203", # 1 blank line required before class docstring
+    "D212", # Multi-line docstring summary should start at the first line
+    "D213", # Multi-line docstring summary should start at the second line
+    "D214", # Section is over-indented
+    "D215", # Section underline is over-indented
+    "D404", # First word of the docstring should not be This
+    "D405", # Section name should be properly capitalized
+    "D406", # Section name should end with a newline
+    "D407", # Missing dashed underline after section
+    "D408", # Section underline should be in the line following the section's name
+    "D409", # Section underline should match the length of its name
+    "D410", # Missing blank line after section
+    "D411", # Missing blank line before section
+    "D413", # Missing blank line after last section
+    "D415", # First line should end with a period, question mark, or exclamation point
+    "D416", # Section name should end with a colon
+]
+match = "(?!test_).*\.py"
+match_dir = "(?!tests).*"
+convention = "google"
+
+# Safety configuration
+[tool.safety]
+# Ignore specific vulnerabilities if needed
+# ignore = ["12345"]
+full_report = true
+short_report = false
+output = "json"
+
+# Additional development tools configuration
+[tool.commitizen]
+name = "cz_conventional_commits"
+version = "0.1.0"
+tag_format = "v$version"
+version_files = [
+    "pyproject.toml:version",
+    "src/app/__init__.py:__version__"
+]
+style = [
+    ["qmark", "fg:#ff9d00 bold"],
+    ["question", "bold"],
+    ["answer", "fg:#ff9d00 bold"],
+    ["pointer", "fg:#ff9d00 bold"],
+    ["highlighted", "fg:#ff9d00 bold"],
+    ["selected", "fg:#cc5454"],
+    ["separator", "fg:#cc5454"],
+    ["instruction", ""],
+    ["text", ""],
+    ["disabled", "fg:#858585 italic"]
 ]
 
 [tool.ruff.lint.mccabe]
@@ -120,24 +330,65 @@ addopts = [
     "-v",
     "--strict-markers",
     "--strict-config",
-    "--cov=app",
+    "--cov=src/app",
     "--cov-report=term-missing",
     "--cov-report=html",
+    "--cov-report=xml",
     "--cov-fail-under=80",
+    "--tb=short"
 ]
 markers = [
-    "unit: Unit tests",
-    "integration: Integration tests",
-    "api: API tests",
-    "slow: Slow tests",
+    "unit: Unit tests - fast, isolated tests with mocked dependencies",
+    "integration: Integration tests - test component interactions",
+    "e2e: End-to-end tests - full workflow and user journey tests",
+    "api: API tests - test HTTP endpoints and responses",
+    "slow: Slow tests - tests that take longer to run",
+    "auth: Authentication and authorization tests",
+    "database: Database-related tests",
+    "cache: Cache-related tests",
+    "external: Tests that mock external services",
+    "error: Error scenario and edge case tests"
 ]
 asyncio_mode = "auto"
 filterwarnings = [
     "ignore::PendingDeprecationWarning:starlette.formparsers",
     "ignore::DeprecationWarning",
+    "ignore::pytest.PytestUnraisableExceptionWarning"
 ]
 
 
+
+[tool.coverage.run]
+source = ["src/app"]
+omit = [
+    "src/app/__init__.py",
+    "src/app/core/config.py",
+    "*/tests/*",
+    "*/venv/*",
+    "*/.venv/*",
+    "*/migrations/*",
+    "src/app/main.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+show_missing = true
+skip_covered = false
+precision = 2
+
+[tool.coverage.html]
+directory = "htmlcov"
 
 [tool.mypy]
 python_version = "3.11"
@@ -150,3 +401,7 @@ explicit_package_bases = true
 [[tool.mypy.overrides]]
 module = "app.*"
 disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false

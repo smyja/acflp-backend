@@ -1,43 +1,202 @@
-# --------- Builder Stage ---------
-FROM ghcr.io/astral-sh/uv:python3.11-alpine AS builder
+# Multi-stage Dockerfile for FastAPI application
+# Optimized for production with security and performance best practices
 
-# Set environment variables for uv
-ENV UV_COMPILE_BYTECODE=1
-ENV UV_LINK_MODE=copy
+# ============================================================================
+# Base stage - Common dependencies and setup
+# ============================================================================
+FROM python:3.11-slim as base
 
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONHASHSEED=random \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_DEFAULT_TIMEOUT=100
+
+# Install system dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        curl \
+        libpq-dev \
+        gcc \
+        netcat-traditional \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for security
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set work directory
 WORKDIR /app
 
-# Install dependencies first (for better layer caching)
-COPY pyproject.toml /app/
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --no-install-project
+# Install uv for faster dependency management
+RUN pip install uv
 
-# Copy the project source code
-COPY . /app
+# ============================================================================
+# Dependencies stage - Install Python dependencies
+# ============================================================================
+FROM base as dependencies
 
-# Install the project in non-editable mode
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --no-editable
+# Copy dependency files
+COPY pyproject.toml uv.lock* ./
 
-# --------- Final Stage ---------
-FROM python:3.11-alpine
+# Install dependencies
+RUN uv venv /opt/venv \
+    && . /opt/venv/bin/activate \
+    && uv pip install -e ".[dev]"
 
-# Create a non-root user for security
-RUN addgroup -g 1000 app \
-    && adduser -u 1000 -G app -s /bin/sh -D app
+# ============================================================================
+# Development stage - For local development
+# ============================================================================
+FROM dependencies as development
 
-# Copy the virtual environment from the builder stage
-COPY --from=builder --chown=app:app /app/.venv /app/.venv
+# Copy application code
+COPY --chown=appuser:appuser . .
 
-# Ensure the virtual environment is in the PATH
-ENV PATH="/app/.venv/bin:$PATH"
+# Switch to non-root user
+USER appuser
 
-# Switch to the non-root user
-USER app
+# Activate virtual environment
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Set the working directory
-WORKDIR /code
+# Expose port
+EXPOSE 8000
 
-# -------- replace with comment to run with gunicorn --------
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/health || exit 1
+
+# Default command for development
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
-# CMD ["gunicorn", "app.main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000"]
+
+# ============================================================================
+# Test stage - For running tests
+# ============================================================================
+FROM dependencies as test
+
+# Install additional test dependencies
+RUN . /opt/venv/bin/activate \
+    && uv pip install pytest-xdist pytest-benchmark locust
+
+# Copy application code
+COPY --chown=appuser:appuser . .
+
+# Switch to non-root user
+USER appuser
+
+# Activate virtual environment
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Set test environment
+ENV ENVIRONMENT=testing
+
+# Default command for testing
+CMD ["pytest", "tests/", "-v", "--cov=src/app", "--cov-report=term-missing"]
+
+# ============================================================================
+# Production dependencies stage - Minimal production dependencies
+# ============================================================================
+FROM base as prod-dependencies
+
+# Copy dependency files
+COPY pyproject.toml uv.lock* ./
+
+# Install only production dependencies
+RUN uv venv /opt/venv \
+    && . /opt/venv/bin/activate \
+    && uv pip install --no-dev .
+
+# ============================================================================
+# Production stage - Optimized for production deployment
+# ============================================================================
+FROM python:3.11-slim as production
+
+# Set environment variables for production
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONHASHSEED=random \
+    PATH="/opt/venv/bin:$PATH" \
+    ENVIRONMENT=production
+
+# Install only runtime dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libpq5 \
+        curl \
+        ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/* \
+    && rm -rf /var/tmp/*
+
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Copy virtual environment from dependencies stage
+COPY --from=prod-dependencies /opt/venv /opt/venv
+
+# Set work directory
+WORKDIR /app
+
+# Copy application code with proper ownership
+COPY --chown=appuser:appuser src/ ./src/
+COPY --chown=appuser:appuser alembic.ini ./
+COPY --chown=appuser:appuser migrations/ ./migrations/
+
+# Create necessary directories
+RUN mkdir -p /app/logs \
+    && chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/health || exit 1
+
+# Production command with Gunicorn
+CMD ["gunicorn", "app.main:app", \
+     "--worker-class", "uvicorn.workers.UvicornWorker", \
+     "--workers", "4", \
+     "--bind", "0.0.0.0:8000", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-", \
+     "--log-level", "info", \
+     "--timeout", "120", \
+     "--keep-alive", "5", \
+     "--max-requests", "1000", \
+     "--max-requests-jitter", "100", \
+     "--preload"]
+
+# ============================================================================
+# Security scanning stage - For vulnerability assessment
+# ============================================================================
+FROM production as security
+
+# Switch back to root for security tools installation
+USER root
+
+# Install security scanning tools
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        wget \
+        gnupg \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Trivy for vulnerability scanning
+RUN wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | apt-key add - \
+    && echo "deb https://aquasecurity.github.io/trivy-repo/deb generic main" | tee -a /etc/apt/sources.list.d/trivy.list \
+    && apt-get update \
+    && apt-get install -y trivy
+
+# Switch back to appuser
+USER appuser
+
+# Default command for security scanning
+CMD ["trivy", "fs", "--security-checks", "vuln,config", "/app"]
