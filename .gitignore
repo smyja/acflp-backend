@@ -136,3 +136,8 @@ cython_debug/
 .ruff_cache
 
 .idea
+# Local database files
+src/crudadmin_data/
+*.db
+*.sqlite
+*.sqlite3

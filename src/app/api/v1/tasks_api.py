@@ -1,7 +1,9 @@
+from datetime import UTC, datetime
 from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, Request
 from fastcrud.paginated import PaginatedListResponse, compute_offset, paginated_response
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...api.dependencies import get_current_superuser, get_current_user
@@ -9,9 +11,59 @@ from ...core.db.database import async_get_db
 from ...core.exceptions.http_exceptions import ForbiddenException, NotFoundException
 from ...core.utils.cache import cache
 from ...crud.crud_tasks import crud_tasks
-from ...schemas.task import TaskCreate, TaskCreateInternal, TaskRead, TaskUpdate
+from ...models.task import Task
+from ...schemas.task import (
+    TaskCreate,
+    TaskCreateInternal,
+    TaskRead,
+    TaskTranslationCreate,
+    TaskUpdate,
+)
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
+
+
+@router.post("/next", response_model=TaskRead)
+async def get_next_task(
+    request: Request,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+) -> TaskRead:
+    # Check if the user already has a task in progress
+    in_progress_task = await crud_tasks.get_multi(
+        db=db, assignee_id=current_user["id"], status="in_progress", limit=1
+    )
+    if in_progress_task and in_progress_task["data"]:
+        raise ForbiddenException("You already have a task in progress")
+
+    # Use FOR UPDATE SKIP LOCKED to atomically claim a task
+    result = await db.execute(
+        select(Task)
+        .where(Task.status == "pending")
+        .order_by(Task.id)
+        .limit(1)
+        .with_for_update(skip_locked=True)
+    )
+    task_row = result.scalar_one_or_none()
+    
+    if not task_row:
+        raise NotFoundException("No available tasks found")
+
+    # Assign the task to the current user atomically
+    await crud_tasks.update(
+        db=db,
+        object=TaskUpdate(status="in_progress", assignee_id=current_user["id"]),
+        id=task_row.id,
+    )
+
+    # Fetch the updated task
+    updated_task = await crud_tasks.get(
+        db=db, id=task_row.id, schema_to_select=TaskRead
+    )
+    if updated_task is None:
+        raise NotFoundException("Updated task not found")
+
+    return cast(TaskRead, updated_task)
 
 
 @router.post("/", response_model=TaskRead, status_code=201)
@@ -49,6 +101,28 @@ async def get_my_tasks(
         offset=compute_offset(page, items_per_page),
         limit=items_per_page,
         created_by_user_id=current_user["id"],
+        is_deleted=False,
+    )
+
+    response: dict[str, Any] = paginated_response(
+        crud_data=tasks_data, page=page, items_per_page=items_per_page
+    )
+    return response
+
+
+@router.get("/assigned", response_model=PaginatedListResponse[TaskRead])
+async def get_assigned_tasks(
+    request: Request,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    page: int = 1,
+    items_per_page: int = 10,
+) -> dict:
+    tasks_data = await crud_tasks.get_multi(
+        db=db,
+        offset=compute_offset(page, items_per_page),
+        limit=items_per_page,
+        assignee_id=current_user["id"],
         is_deleted=False,
     )
 
@@ -123,6 +197,44 @@ async def update_task(
 
     updated_task = await crud_tasks.update(db=db, object=values, id=id)
     # TODO: Invalidate cache for get_task and get_my_tasks
+    return cast(TaskRead, updated_task)
+
+
+@router.post("/{id}/translation", response_model=TaskRead)
+async def create_translation(
+    request: Request,
+    id: int,
+    translation: TaskTranslationCreate,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+) -> TaskRead:
+    db_task = await crud_tasks.get(db=db, id=id)
+    if db_task is None:
+        raise NotFoundException("Task not found")
+
+    if db_task["status"] != "in_progress" or db_task["assignee_id"] != current_user["id"]:
+        raise ForbiddenException("This task is not available for translation")
+
+    await crud_tasks.update(
+        db=db,
+        object=TaskUpdate(
+            **{
+                "translated_text": translation.translated_text,
+                "status": "completed",
+                "translated_by_user_id": current_user["id"],
+                "translated_at": datetime.now(UTC),
+            }
+        ),
+        id=id,
+    )
+    
+    # Fetch the updated task
+    updated_task = await crud_tasks.get(
+        db=db, id=id, schema_to_select=TaskRead
+    )
+    if updated_task is None:
+        raise NotFoundException("Updated task not found")
+    
     return cast(TaskRead, updated_task)
 
 

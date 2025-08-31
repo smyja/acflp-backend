@@ -32,11 +32,15 @@ class TaskRead(BaseModel):
         Field(examples=["https://www.taskimageurl.com"], default=None),
     ]
     created_by_user_id: int
+    assignee_id: int | None
+    translated_by_user_id: int | None
     created_at: datetime
     source_language: str
     target_language: str | None
     task_type: str
     status: str
+    translated_text: str | None
+    translated_at: datetime | None
 
 
 class TaskCreate(TaskBase):
@@ -68,10 +72,18 @@ class TaskUpdate(BaseModel):
     target_language: Annotated[str | None, Field(max_length=50, examples=["es"], default=None)]
     task_type: Annotated[str | None, Field(max_length=50, examples=["text_translation"], default=None)]
     status: Annotated[str | None, Field(max_length=50, examples=["in_progress"], default=None)]
+    assignee_id: Annotated[int | None, Field(examples=[1], default=None)]
+    translated_text: Annotated[str | None, Field(min_length=1, max_length=63206, examples=["This is the translated content."], default=None)]
+    translated_by_user_id: Annotated[int | None, Field(examples=[1], default=None)]
+    translated_at: Annotated[datetime | None, Field(examples=["2023-01-01T00:00:00Z"], default=None)]
 
 
 class TaskUpdateInternal(TaskUpdate):
     updated_at: datetime
+
+
+class TaskTranslationCreate(BaseModel):
+    translated_text: Annotated[str, Field(min_length=1, max_length=63206, examples=["This is the translated content of my task."])]
 
 
 class TaskDelete(BaseModel):
