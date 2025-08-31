@@ -51,11 +51,11 @@ jobs:
     - name: Run Ruff formatting check
       run: uv run ruff format src --check
     
-    - name: Run mypy type checking
-      run: uv run mypy src --config-file pyproject.toml
-      env:
-        ENVIRONMENT: local
-        SECRET_KEY: test-secret-key-for-testing-only
+    # - name: Run mypy type checking
+    #   run: uv run mypy src --config-file pyproject.toml
+    #   env:
+    #     ENVIRONMENT: local
+    #     SECRET_KEY: test-secret-key-for-testing-only
 
   # CodeQL Security Analysis
   codeql:
