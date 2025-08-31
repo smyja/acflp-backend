@@ -3,7 +3,7 @@ from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, Request
 from fastcrud.paginated import PaginatedListResponse, compute_offset, paginated_response
-from sqlalchemy import select, text
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...api.dependencies import get_current_superuser, get_current_user
@@ -30,19 +30,13 @@ async def get_next_task(
     db: Annotated[AsyncSession, Depends(async_get_db)],
 ) -> TaskRead:
     # Check if the user already has a task in progress
-    in_progress_task = await crud_tasks.get_multi(
-        db=db, assignee_id=current_user["id"], status="in_progress", limit=1
-    )
+    in_progress_task = await crud_tasks.get_multi(db=db, assignee_id=current_user["id"], status="in_progress", limit=1)
     if in_progress_task and in_progress_task["data"]:
         raise ForbiddenException("You already have a task in progress")
 
     # Use FOR UPDATE SKIP LOCKED to atomically claim a task
     result = await db.execute(
-        select(Task)
-        .where(Task.status == "pending")
-        .order_by(Task.id)
-        .limit(1)
-        .with_for_update(skip_locked=True)
+        select(Task).where(Task.status == "pending").order_by(Task.id).limit(1).with_for_update(skip_locked=True)
     )
     task_row = result.scalar_one_or_none()
 
@@ -57,9 +51,7 @@ async def get_next_task(
     )
 
     # Fetch the updated task
-    updated_task = await crud_tasks.get(
-        db=db, id=task_row.id, schema_to_select=TaskRead
-    )
+    updated_task = await crud_tasks.get(db=db, id=task_row.id, schema_to_select=TaskRead)
     if updated_task is None:
         raise NotFoundException("Updated task not found")
 
@@ -79,9 +71,7 @@ async def create_task(
     task_internal = TaskCreateInternal(**task_internal_dict)
     created_task = await crud_tasks.create(db=db, object=task_internal)
 
-    task_read = await crud_tasks.get(
-        db=db, id=created_task.id, schema_to_select=TaskRead
-    )
+    task_read = await crud_tasks.get(db=db, id=created_task.id, schema_to_select=TaskRead)
     if task_read is None:
         raise NotFoundException("Created task not found")
 
@@ -104,9 +94,7 @@ async def get_my_tasks(
         is_deleted=False,
     )
 
-    response: dict[str, Any] = paginated_response(
-        crud_data=tasks_data, page=page, items_per_page=items_per_page
-    )
+    response: dict[str, Any] = paginated_response(crud_data=tasks_data, page=page, items_per_page=items_per_page)
     return response
 
 
@@ -126,9 +114,7 @@ async def get_assigned_tasks(
         is_deleted=False,
     )
 
-    response: dict[str, Any] = paginated_response(
-        crud_data=tasks_data, page=page, items_per_page=items_per_page
-    )
+    response: dict[str, Any] = paginated_response(crud_data=tasks_data, page=page, items_per_page=items_per_page)
     return response
 
 
@@ -150,9 +136,7 @@ async def get_all_tasks(
         is_deleted=False,
     )
 
-    response: dict[str, Any] = paginated_response(
-        crud_data=tasks_data, page=page, items_per_page=items_per_page
-    )
+    response: dict[str, Any] = paginated_response(crud_data=tasks_data, page=page, items_per_page=items_per_page)
     return response
 
 
@@ -168,10 +152,7 @@ async def get_task(
     if db_task is None:
         raise NotFoundException("Task not found")
 
-    if (
-        not current_user.get("is_superuser")
-        and db_task.created_by_user_id != current_user["id"]
-    ):
+    if not current_user.get("is_superuser") and db_task.created_by_user_id != current_user["id"]:
         raise ForbiddenException("You don't have permission to access this task")
 
     return cast(TaskRead, db_task)
@@ -189,10 +170,7 @@ async def update_task(
     if db_task is None:
         raise NotFoundException("Task not found")
 
-    if (
-        not current_user.get("is_superuser")
-        and db_task.created_by_user_id != current_user["id"]
-    ):
+    if not current_user.get("is_superuser") and db_task.created_by_user_id != current_user["id"]:
         raise ForbiddenException("You don't have permission to update this task")
 
     updated_task = await crud_tasks.update(db=db, object=values, id=id)
@@ -229,9 +207,7 @@ async def create_translation(
     )
 
     # Fetch the updated task
-    updated_task = await crud_tasks.get(
-        db=db, id=id, schema_to_select=TaskRead
-    )
+    updated_task = await crud_tasks.get(db=db, id=id, schema_to_select=TaskRead)
     if updated_task is None:
         raise NotFoundException("Updated task not found")
 
@@ -249,10 +225,7 @@ async def delete_task(
     if db_task is None:
         raise NotFoundException("Task not found")
 
-    if (
-        not current_user.get("is_superuser")
-        and db_task.created_by_user_id != current_user["id"]
-    ):
+    if not current_user.get("is_superuser") and db_task.created_by_user_id != current_user["id"]:
         raise ForbiddenException("You don't have permission to delete this task")
 
     await crud_tasks.delete(db=db, id=id)

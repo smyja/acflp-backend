@@ -1,4 +1,4 @@
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Cookie, Depends, Response
 from jose import JWTError
@@ -16,7 +16,7 @@ async def logout(
     response: Response,
     access_token: Annotated[str, Depends(oauth2_scheme)],
     db: Annotated[AsyncSession, Depends(async_get_db)],
-    refresh_token: Annotated[Optional[str], Cookie(alias="refresh_token")] = None,
+    refresh_token: Annotated[str | None, Cookie(alias="refresh_token")] = None,
 ) -> dict[str, str]:
     try:
         if not refresh_token:

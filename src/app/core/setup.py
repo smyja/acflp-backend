@@ -3,14 +3,14 @@ from contextlib import _AsyncGeneratorContextManager, asynccontextmanager
 from typing import Any
 
 import anyio
-import fastapi
-import redis.asyncio as redis
 from arq import create_pool
 from arq.connections import RedisSettings
+import fastapi
 from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
+import redis.asyncio as redis
 
 from ..api.dependencies import get_current_superuser
 from ..core.utils.rate_limit import rate_limiter

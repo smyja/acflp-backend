@@ -1,5 +1,5 @@
-import uuid as uuid_pkg
 from datetime import UTC, datetime
+import uuid as uuid_pkg
 
 from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -23,7 +23,6 @@ class Task(Base):
     uuid: Mapped[uuid_pkg.UUID] = mapped_column(default_factory=uuid_pkg.uuid4, primary_key=True, unique=True)
     media_url: Mapped[str | None] = mapped_column(String, default=None)
     status: Mapped[str] = mapped_column(String(50), default="pending")
-
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default_factory=lambda: datetime.now(UTC))
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)

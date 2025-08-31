@@ -1,7 +1,7 @@
 import asyncio
 import importlib
-import pkgutil
 from logging.config import fileConfig
+import pkgutil
 
 from alembic import context
 from sqlalchemy import pool

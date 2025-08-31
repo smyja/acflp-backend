@@ -1,8 +1,8 @@
 import asyncio
 import logging
 
-import uvloop
 from arq.worker import Worker
+import uvloop
 
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 

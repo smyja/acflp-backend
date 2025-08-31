@@ -1,6 +1,6 @@
 import logging
-import os
 from logging.handlers import RotatingFileHandler
+import os
 
 LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs")
 if not os.path.exists(LOG_DIR):

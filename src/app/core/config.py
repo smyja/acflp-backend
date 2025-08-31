@@ -1,5 +1,5 @@
-import os
 from enum import Enum
+import os
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings
@@ -55,9 +55,7 @@ class DatabaseSettings(BaseSettings):
 class SQLiteSettings(DatabaseSettings):
     SQLITE_URI: str = config("SQLITE_URI", default="./sql_app.db")
     SQLITE_SYNC_PREFIX: str = config("SQLITE_SYNC_PREFIX", default="sqlite:///")
-    SQLITE_ASYNC_PREFIX: str = config(
-        "SQLITE_ASYNC_PREFIX", default="sqlite+aiosqlite:///"
-    )
+    SQLITE_ASYNC_PREFIX: str = config("SQLITE_ASYNC_PREFIX", default="sqlite+aiosqlite:///")
 
 
 class MySQLSettings(DatabaseSettings):
@@ -66,9 +64,7 @@ class MySQLSettings(DatabaseSettings):
     MYSQL_SERVER: str = config("MYSQL_SERVER", default="localhost")
     MYSQL_PORT: int = config("MYSQL_PORT", default=5432)
     MYSQL_DB: str = config("MYSQL_DB", default="dbname")
-    MYSQL_URI: str = (
-        f"{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_SERVER}:{MYSQL_PORT}/{MYSQL_DB}"
-    )
+    MYSQL_URI: str = f"{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_SERVER}:{MYSQL_PORT}/{MYSQL_DB}"
     MYSQL_SYNC_PREFIX: str = config("MYSQL_SYNC_PREFIX", default="mysql://")
     MYSQL_ASYNC_PREFIX: str = config("MYSQL_ASYNC_PREFIX", default="mysql+aiomysql://")
     MYSQL_URL: str | None = config("MYSQL_URL", default=None)
@@ -81,12 +77,8 @@ class PostgresSettings(DatabaseSettings):
     POSTGRES_PORT: int = config("POSTGRES_PORT", default=5432)
     POSTGRES_DB: str = config("POSTGRES_DB", default="postgres")
     POSTGRES_SYNC_PREFIX: str = config("POSTGRES_SYNC_PREFIX", default="postgresql://")
-    POSTGRES_ASYNC_PREFIX: str = config(
-        "POSTGRES_ASYNC_PREFIX", default="postgresql+asyncpg://"
-    )
-    POSTGRES_URI: str = (
-        f"{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_SERVER}:{POSTGRES_PORT}/{POSTGRES_DB}"
-    )
+    POSTGRES_ASYNC_PREFIX: str = config("POSTGRES_ASYNC_PREFIX", default="postgresql+asyncpg://")
+    POSTGRES_URI: str = f"{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_SERVER}:{POSTGRES_PORT}/{POSTGRES_DB}"
     POSTGRES_URL: str | None = config("POSTGRES_URL", default=None)
 
 
@@ -118,9 +110,7 @@ class RedisQueueSettings(BaseSettings):
 class RedisRateLimiterSettings(BaseSettings):
     REDIS_RATE_LIMIT_HOST: str = config("REDIS_RATE_LIMIT_HOST", default="localhost")
     REDIS_RATE_LIMIT_PORT: int = config("REDIS_RATE_LIMIT_PORT", default=6379)
-    REDIS_RATE_LIMIT_URL: str = (
-        f"redis://{REDIS_RATE_LIMIT_HOST}:{REDIS_RATE_LIMIT_PORT}"
-    )
+    REDIS_RATE_LIMIT_URL: str = f"redis://{REDIS_RATE_LIMIT_HOST}:{REDIS_RATE_LIMIT_PORT}"
 
 
 class DefaultRateLimitSettings(BaseSettings):
@@ -145,9 +135,7 @@ class CRUDAdminSettings(BaseSettings):
     CRUD_ADMIN_REDIS_HOST: str = config("CRUD_ADMIN_REDIS_HOST", default="localhost")
     CRUD_ADMIN_REDIS_PORT: int = config("CRUD_ADMIN_REDIS_PORT", default=6379)
     CRUD_ADMIN_REDIS_DB: int = config("CRUD_ADMIN_REDIS_DB", default=0)
-    CRUD_ADMIN_REDIS_PASSWORD: str | None = config(
-        "CRUD_ADMIN_REDIS_PASSWORD", default="None"
-    )
+    CRUD_ADMIN_REDIS_PASSWORD: str | None = config("CRUD_ADMIN_REDIS_PASSWORD", default="None")
     CRUD_ADMIN_REDIS_SSL: bool = config("CRUD_ADMIN_REDIS_SSL", default=False)
 
 
@@ -159,9 +147,7 @@ class EnvironmentOption(Enum):
 
 
 class EnvironmentSettings(BaseSettings):
-    ENVIRONMENT: EnvironmentOption = config(
-        "ENVIRONMENT", default=EnvironmentOption.LOCAL
-    )
+    ENVIRONMENT: EnvironmentOption = config("ENVIRONMENT", default=EnvironmentOption.LOCAL)
 
 
 class Settings(

@@ -35,7 +35,7 @@ def register_admin_views(admin: CRUDAdmin) -> None:
     """
     # Define field names as constants to avoid hardcoded strings
     password_field = "password"  # noqa: S105
-    
+
     password_transformer = PasswordTransformer(
         password_field=password_field,
         hashed_field="hashed_password",

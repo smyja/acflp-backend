@@ -1,5 +1,5 @@
-import secrets
 from datetime import timedelta
+import secrets
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -77,6 +77,7 @@ async def _create_oauth_user(db: AsyncSession, user_info) -> None:
         await crud_users.create(db=db, object=user_data)
     except Exception as e:
         import logging
+
         logger = logging.getLogger(__name__)
         logger.error(f"Failed to create OAuth user: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to create user account") from e
@@ -130,9 +131,7 @@ async def google_callback(
 
         # Generate tokens
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = await create_access_token(
-            data={"sub": user["username"]}, expires_delta=access_token_expires
-        )
+        access_token = await create_access_token(data={"sub": user["username"]}, expires_delta=access_token_expires)
 
         refresh_token = await create_refresh_token(data={"sub": user["username"]})
 
@@ -157,6 +156,7 @@ async def google_callback(
     except Exception as e:
         # Log the actual error for debugging but don't expose it to users
         import logging
+
         logger = logging.getLogger(__name__)
         logger.error(f"OAuth callback error: {str(e)}", exc_info=True)
 
@@ -198,6 +198,7 @@ async def get_google_user_info(
         raise
     except Exception as e:
         import logging
+
         logger = logging.getLogger(__name__)
         logger.error(f"OAuth user info error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=400, detail="OAuth verification failed") from e

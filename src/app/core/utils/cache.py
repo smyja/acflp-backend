@@ -1,7 +1,7 @@
+from collections.abc import Callable
 import functools
 import json
 import re
-from collections.abc import Callable
 from typing import Any
 
 from fastapi import Request
@@ -190,6 +190,7 @@ def _create_cache_decorator(  # noqa: C901
     pattern_to_invalidate_extra: list[str] | None,
 ) -> Callable:
     """Create the actual cache decorator with the given parameters."""
+
     async def _handle_get_request(
         cache_key: str,
         to_invalidate_extra: dict[str, Any] | None,
@@ -222,7 +223,7 @@ def _create_cache_decorator(  # noqa: C901
     ) -> None:
         """Invalidate cache for non-GET requests."""
         await client.delete(cache_key)
-        
+
         if to_invalidate_extra is not None:
             formatted_extra = _format_extra_data(to_invalidate_extra, kwargs)
             for prefix, id in formatted_extra.items():
@@ -246,7 +247,7 @@ def _create_cache_decorator(  # noqa: C901
 
         formatted_key_prefix = _format_prefix(key_prefix, kwargs)
         cache_key = f"{formatted_key_prefix}:{resource_id}"
-        
+
         if request.method == "GET":
             cached_result = await _handle_get_request(cache_key, to_invalidate_extra, pattern_to_invalidate_extra)
             if cached_result is not None:
@@ -265,6 +266,7 @@ def _create_cache_decorator(  # noqa: C901
         @functools.wraps(func)
         async def inner(request: Request, *args: Any, **kwargs: Any) -> Any:
             return await _process_request(func, request, args, kwargs)
+
         return inner
 
     return wrapper
