@@ -234,22 +234,22 @@ jobs:
     
     - name: Start services with Docker Compose
       run: |
-        docker-compose -f docker-compose.test.yml up -d
+        docker compose -f docker-compose.test.yml up -d
         sleep 30  # Wait for services to be ready
     
     - name: Run integration tests
       run: |
-        docker-compose -f docker-compose.test.yml exec -T web pytest tests/integration/ -v
+        docker compose -f docker-compose.test.yml exec -T web pytest tests/integration/ -v
     
     - name: Collect logs
       if: failure()
       run: |
-        docker-compose -f docker-compose.test.yml logs
+        docker compose -f docker-compose.test.yml logs
     
     - name: Cleanup
       if: always()
       run: |
-        docker-compose -f docker-compose.test.yml down -v
+        docker compose -f docker-compose.test.yml down -v
 
   # Performance Tests
   performance:
