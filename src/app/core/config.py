@@ -61,8 +61,8 @@ class SQLiteSettings(DatabaseSettings):
 
 
 class MySQLSettings(DatabaseSettings):
-    MYSQL_USER: str = config("MYSQL_USER", default="username")
-    MYSQL_PASSWORD: str = config("MYSQL_PASSWORD", default="password")
+    MYSQL_USER: str = config("MYSQL_USER", default="")
+    MYSQL_PASSWORD: str = config("MYSQL_PASSWORD", default="")
     MYSQL_SERVER: str = config("MYSQL_SERVER", default="localhost")
     MYSQL_PORT: int = config("MYSQL_PORT", default=5432)
     MYSQL_DB: str = config("MYSQL_DB", default="dbname")
@@ -76,7 +76,7 @@ class MySQLSettings(DatabaseSettings):
 
 class PostgresSettings(DatabaseSettings):
     POSTGRES_USER: str = config("POSTGRES_USER", default="postgres")
-    POSTGRES_PASSWORD: str = config("POSTGRES_PASSWORD", default="postgres")
+    POSTGRES_PASSWORD: str = config("POSTGRES_PASSWORD", default="")
     POSTGRES_SERVER: str = config("POSTGRES_SERVER", default="localhost")
     POSTGRES_PORT: int = config("POSTGRES_PORT", default=5432)
     POSTGRES_DB: str = config("POSTGRES_DB", default="postgres")
@@ -94,7 +94,7 @@ class FirstUserSettings(BaseSettings):
     ADMIN_NAME: str = config("ADMIN_NAME", default="admin")
     ADMIN_EMAIL: str = config("ADMIN_EMAIL", default="admin@admin.com")
     ADMIN_USERNAME: str = config("ADMIN_USERNAME", default="admin")
-    ADMIN_PASSWORD: str = config("ADMIN_PASSWORD", default="!Ch4ng3Th1sP4ssW0rd!")
+    ADMIN_PASSWORD: str = config("ADMIN_PASSWORD", default="")
 
 
 class TestSettings(BaseSettings): ...
