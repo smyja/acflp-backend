@@ -182,30 +182,4 @@ CMD ["gunicorn", "src.app.main:app", \
      "--max-requests-jitter", "100", \
      "--preload"]
 
-# ============================================================================
-# Security scanning stage - For vulnerability assessment
-# ============================================================================
-FROM production AS security
-
-# Switch back to root for security tools installation
-USER root
-
-# Install security scanning tools
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        wget \
-        gnupg \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Trivy for vulnerability scanning
-RUN wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | apt-key add - \
-    && echo "deb https://aquasecurity.github.io/trivy-repo/deb generic main" | tee -a /etc/apt/sources.list.d/trivy.list \
-    && apt-get update \
-    && apt-get install -y trivy
-
-# Switch back to appuser
-USER appuser
-
-# Default command for security scanning
-CMD ["trivy", "fs", "--security-checks", "vuln,config", "/app"]
+ 
