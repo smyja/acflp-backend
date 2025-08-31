@@ -169,7 +169,7 @@ class TestLogout:
         access_token = "valid_access_token"
         refresh_token = None  # Missing refresh token
 
-        with pytest.raises(UnauthorizedException, match=r".*[Ii]nvalid.*token.*"):
+        with pytest.raises(UnauthorizedException, match=r".*[Rr]efresh token not found.*"):
             await logout(response, access_token, mock_db, refresh_token)
 
     @pytest.mark.asyncio
