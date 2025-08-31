@@ -200,6 +200,7 @@ def _create_cache_decorator(  # noqa: C901
         if to_invalidate_extra is not None or pattern_to_invalidate_extra is not None:
             raise InvalidRequestError
 
+        assert client is not None  # Already checked in _process_request
         cached_data = await client.get(cache_key)
         if cached_data:
             return json.loads(cached_data.decode())
@@ -210,6 +211,7 @@ def _create_cache_decorator(  # noqa: C901
         serializable_data = jsonable_encoder(result)
         serialized_data = json.dumps(serializable_data)
 
+        assert client is not None  # Already checked in _process_request
         await client.set(cache_key, serialized_data)
         await client.expire(cache_key, expiration)
 
@@ -222,6 +224,7 @@ def _create_cache_decorator(  # noqa: C901
         kwargs: dict[str, Any],
     ) -> None:
         """Invalidate cache for non-GET requests."""
+        assert client is not None  # Already checked in _process_request
         await client.delete(cache_key)
 
         if to_invalidate_extra is not None:

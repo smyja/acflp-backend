@@ -204,10 +204,6 @@ disallow_untyped_defs = false
 color_output = true
 error_summary = true
 
-# MyPy path configuration
-mypy_path = "src"
-packages = ["app"]
-
 [[tool.mypy.overrides]]
 module = [
     "faker.*",

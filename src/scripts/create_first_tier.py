@@ -31,7 +31,7 @@ async def create_first_tier(session: AsyncSession) -> None:
         logger.error(f"Error creating tier: {e}")
 
 
-async def main():
+async def main() -> None:
     async with local_session() as session:
         await create_first_tier(session)
 

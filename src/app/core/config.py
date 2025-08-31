@@ -43,7 +43,7 @@ class CryptSettings(BaseSettings):
 
 class OAuthSettings(BaseSettings):
     GOOGLE_CLIENT_ID: str = config("GOOGLE_CLIENT_ID", default="")
-    GOOGLE_CLIENT_SECRET: SecretStr = config("GOOGLE_CLIENT_SECRET", cast=SecretStr, default="")
+    GOOGLE_CLIENT_SECRET: SecretStr = SecretStr(config("GOOGLE_CLIENT_SECRET", default=""))
     OAUTH_REDIRECT_URI: str = config("OAUTH_REDIRECT_URI", default="http://localhost:8000/api/v1/auth/google/callback")
     FRONTEND_URL: str = config("FRONTEND_URL", default="http://localhost:3000")
 
