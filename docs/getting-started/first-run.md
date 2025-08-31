@@ -342,7 +342,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_current_user
+from src.app.api.dependencies import get_current_user
 from app.core.db.database import async_get_db
 from app.crud.crud_items import crud_items
 from app.schemas.item import ItemCreate, ItemRead, ItemUpdate
@@ -423,14 +423,14 @@ Add your new router to `src/app/api/v1/__init__.py`:
 ```python
 from fastapi import APIRouter
 
-from app.api.v1.login import router as login_router
-from app.api.v1.logout import router as logout_router
-from app.api.v1.posts import router as posts_router
-from app.api.v1.rate_limits import router as rate_limits_router
-from app.api.v1.tasks import router as tasks_router
-from app.api.v1.tiers import router as tiers_router
-from app.api.v1.users import router as users_router
-from app.api.v1.items import router as items_router  # Add this line
+from src.app.api.v1.login import router as login_router
+from src.app.api.v1.logout import router as logout_router
+from src.app.api.v1.posts import router as posts_router
+from src.app.api.v1.rate_limits import router as rate_limits_router
+from src.app.api.v1.tasks import router as tasks_router
+from src.app.api.v1.tiers import router as tiers_router
+from src.app.api.v1.users import router as users_router
+from src.app.api.v1.items import router as items_router  # Add this line
 
 router = APIRouter(prefix="/v1")
 router.include_router(login_router, prefix="/login")

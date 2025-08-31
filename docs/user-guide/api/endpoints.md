@@ -13,7 +13,7 @@ from typing import Annotated
 from app.core.db.database import async_get_db
 from app.crud.crud_users import crud_users
 from app.schemas.user import UserRead, UserCreate
-from app.api.dependencies import get_current_user
+from src.app.api.dependencies import get_current_user
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -152,7 +152,7 @@ async def create_user(
 For admin-only endpoints, use `get_current_superuser`:
 
 ```python
-from app.api.dependencies import get_current_superuser
+from src.app.api.dependencies import get_current_superuser
 
 @router.delete("/{user_id}/permanent", dependencies=[Depends(get_current_superuser)])
 async def permanently_delete_user(
@@ -268,7 +268,7 @@ from typing import Annotated
 from app.core.db.database import async_get_db
 from app.crud.crud_posts import crud_posts  # You'll create this
 from app.schemas.post import PostRead, PostCreate, PostUpdate  # You'll create these
-from app.api.dependencies import get_current_user
+from src.app.api.dependencies import get_current_user
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 

@@ -51,7 +51,7 @@ In `src/app/main.py`, v1 is registered:
 
 ```python
 from fastapi import FastAPI
-from app.api.v1 import api_router as api_v1_router
+from src.app.api.v1 import api_router as api_v1_router
 
 app = FastAPI()
 
@@ -99,8 +99,8 @@ api_router.include_router(users_router)
 ```python
 # src/app/main.py
 from fastapi import FastAPI
-from app.api.v1 import api_router as api_v1_router
-from app.api.v2 import api_router as api_v2_router
+from src.app.api.v1 import api_router as api_v1_router
+from src.app.api.v2 import api_router as api_v2_router
 
 app = FastAPI()
 
@@ -306,7 +306,7 @@ async def get_api_versions():
 Register it in main.py:
 ```python
 # src/app/main.py
-from app.api.versions import router as versions_router
+from src.app.api.versions import router as versions_router
 
 app.include_router(versions_router, prefix="/api")
 # Now available at GET /api/versions

@@ -40,7 +40,7 @@ async def create_user(
 ### 🔐 **Built-in Authentication**
 Add authentication to any endpoint:
 ```python
-from app.api.dependencies import get_current_user
+from src.app.api.dependencies import get_current_user
 
 @router.get("/me", response_model=UserRead)
 async def get_profile(current_user: Annotated[dict, Depends(get_current_user)]):

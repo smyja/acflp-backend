@@ -7,10 +7,10 @@ import pytest
 from fastapi import Response, Request
 from jose import JWTError
 
-from src.src.app.api.v1.login import login, refresh_access_token
-from src.src.app.api.v1.logout import logout
-from src.app.core.exceptions.http_exceptions import UnauthorizedException
-from src.app.core.schemas import LoginCredentials, Token
+from src.app.api.v1.login import login, refresh_access_token
+from src.app.api.v1.logout import logout
+from app.core.exceptions.http_exceptions import UnauthorizedException
+from app.core.schemas import LoginCredentials, Token
 
 
 class TestLogin:
@@ -157,10 +157,12 @@ class TestLogout:
             assert result["message"] == "Logged out successfully"
 
             # Verify tokens were blacklisted
-            mock_blacklist.assert_called_once()
+            mock_blacklist.assert_called_once_with(
+                access_token=access_token, refresh_token=refresh_token, db=mock_db
+            )
 
             # Verify refresh token cookie was deleted
-            response.delete_cookie.assert_called_once()
+            response.delete_cookie.assert_called_once_with(key="refresh_token")
 
     @pytest.mark.asyncio
     async def test_logout_missing_refresh_token(self, mock_db):
@@ -169,7 +171,7 @@ class TestLogout:
         access_token = "valid_access_token"
         refresh_token = None  # Missing refresh token
 
-        with pytest.raises(UnauthorizedException, match=r".*[Rr]efresh.*token.*"):
+        with pytest.raises(UnauthorizedException, match="Refresh token not found"):
             await logout(response, access_token, refresh_token, mock_db)
 
     @pytest.mark.asyncio

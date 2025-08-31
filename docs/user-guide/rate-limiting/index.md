@@ -15,7 +15,7 @@ Rate limiting controls how many requests users can make within a specific time p
 
 ```python
 from fastapi import Depends
-from app.api.dependencies import rate_limiter_dependency
+from src.app.api.dependencies import rate_limiter_dependency
 
 @router.post("/api/v1/posts", dependencies=[Depends(rate_limiter_dependency)])
 async def create_post(post_data: PostCreate):

@@ -29,7 +29,7 @@ The system implements several common authorization patterns:
 Superusers have elevated privileges for administrative operations. This pattern is essential for system management but must be carefully controlled.
 
 ```python
-from app.api.dependencies import get_current_superuser
+from src.app.api.dependencies import get_current_superuser
 
 # Superuser-only endpoint
 @router.get("/admin/users/", dependencies=[Depends(get_current_superuser)])
