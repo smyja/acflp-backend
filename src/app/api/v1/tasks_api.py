@@ -46,7 +46,19 @@ async def get_next_task(
     # Assign the task to the current user atomically
     await crud_tasks.update(
         db=db,
-        object=TaskUpdate(status="in_progress", assignee_id=current_user["id"]),
+        object=TaskUpdate(
+            title=None,
+            text=None,
+            media_url=None,
+            source_language=None,
+            target_language=None,
+            task_type=None,
+            status="in_progress",
+            assignee_id=current_user["id"],
+            translated_text=None,
+            translated_by_user_id=None,
+            translated_at=None
+        ),
         id=task_row.id,
     )
 

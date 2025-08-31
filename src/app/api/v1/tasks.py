@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 from arq.jobs import Job as ArqJob
 from fastapi import APIRouter, Depends, HTTPException
@@ -56,4 +56,4 @@ async def get_task(task_id: str) -> dict[str, Any] | None:
     if job_info is None:
         return None
 
-    return job_info.__dict__
+    return cast(dict[str, Any], job_info.__dict__)

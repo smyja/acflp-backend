@@ -1,6 +1,6 @@
 from datetime import timedelta
 import secrets
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
@@ -29,7 +29,7 @@ google_sso = GoogleSSO(
 )
 
 
-async def _create_oauth_user(db: AsyncSession, user_info) -> None:
+async def _create_oauth_user(db: AsyncSession, user_info: Any) -> None:
     """Create a new user from OAuth provider information.
 
     Args:
@@ -84,7 +84,7 @@ async def _create_oauth_user(db: AsyncSession, user_info) -> None:
 
 
 @router.get("/google/login")
-async def google_login(request: Request):
+async def google_login(request: Request) -> Any:
     """Initiate Google OAuth login.
 
     Redirects user to Google's OAuth consent screen.
@@ -98,7 +98,7 @@ async def google_callback(
     request: Request,
     response: Response,
     db: Annotated[AsyncSession, Depends(async_get_db)],
-):
+) -> RedirectResponse:
     """Handle Google OAuth callback.
 
     Processes the OAuth response, creates or retrieves user,
@@ -131,9 +131,10 @@ async def google_callback(
 
         # Generate tokens
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = await create_access_token(data={"sub": user["username"]}, expires_delta=access_token_expires)
+        username = user.username if hasattr(user, 'username') else user["username"]
+        access_token = await create_access_token(data={"sub": username}, expires_delta=access_token_expires)
 
-        refresh_token = await create_refresh_token(data={"sub": user["username"]})
+        refresh_token = await create_refresh_token(data={"sub": username})
 
         # Set refresh token as HTTP-only cookie with security settings
         max_age = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
@@ -169,7 +170,7 @@ async def google_callback(
 async def get_google_user_info(
     request: Request,
     db: Annotated[AsyncSession, Depends(async_get_db)],
-):
+) -> dict[str, Any]:
     """Get current user information from Google OAuth.
 
     This endpoint is for testing OAuth integration in development.
