@@ -18,7 +18,7 @@ from src.app.schemas.user import UserRead, UserCreate
 from src.app.schemas.tier import TierRead, TierCreate
 from src.app.schemas.task import TaskRead, TaskCreate
 
-DATABASE_URI = settings.POSTGRES_URI
+DATABASE_URI = settings.postgres_uri
 DATABASE_PREFIX = settings.POSTGRES_SYNC_PREFIX
 
 sync_engine = create_engine(DATABASE_PREFIX + DATABASE_URI)
@@ -119,7 +119,7 @@ async def async_db_session():
     
     # Create test database engine
     test_engine = create_async_engine(
-        settings.POSTGRES_ASYNC_PREFIX + settings.POSTGRES_URI,
+        settings.POSTGRES_ASYNC_PREFIX + settings.postgres_uri,
         echo=False,
         pool_pre_ping=True
     )
