@@ -150,8 +150,9 @@ WORKDIR /app
 
 # Copy application code with proper ownership
 COPY --chown=appuser:appuser src/ ./src/
-COPY --chown=appuser:appuser alembic.ini ./
-COPY --chown=appuser:appuser migrations/ ./migrations/
+# Alembic configuration and migrations live under src/ in this repo
+COPY --chown=appuser:appuser src/alembic.ini ./alembic.ini
+COPY --chown=appuser:appuser src/migrations/ ./migrations/
 
 # Create necessary directories
 RUN mkdir -p /app/logs \
@@ -168,7 +169,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/api/v1/health || exit 1
 
 # Production command with Gunicorn
-CMD ["gunicorn", "app.main:app", \
+CMD ["gunicorn", "src.app.main:app", \
      "--worker-class", "uvicorn.workers.UvicornWorker", \
      "--workers", "4", \
      "--bind", "0.0.0.0:8000", \
