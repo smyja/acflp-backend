@@ -181,7 +181,7 @@ async def _delete_keys_by_pattern(pattern: str) -> None:
             await client.delete(*keys)
 
 
-def _create_cache_decorator(
+def _create_cache_decorator(  # noqa: C901
     key_prefix: str,
     resource_id_name: Any,
     expiration: int,
@@ -190,7 +190,11 @@ def _create_cache_decorator(
     pattern_to_invalidate_extra: list[str] | None,
 ) -> Callable:
     """Create the actual cache decorator with the given parameters."""
-    async def _handle_get_request(cache_key: str, to_invalidate_extra: dict[str, Any] | None, pattern_to_invalidate_extra: list[str] | None) -> Any | None:
+    async def _handle_get_request(
+        cache_key: str,
+        to_invalidate_extra: dict[str, Any] | None,
+        pattern_to_invalidate_extra: list[str] | None,
+    ) -> Any | None:
         """Handle GET request caching logic."""
         if to_invalidate_extra is not None or pattern_to_invalidate_extra is not None:
             raise InvalidRequestError
@@ -210,7 +214,12 @@ def _create_cache_decorator(
 
         return json.loads(serialized_data)
 
-    async def _invalidate_cache(cache_key: str, to_invalidate_extra: dict[str, Any] | None, pattern_to_invalidate_extra: list[str] | None, kwargs: dict[str, Any]) -> None:
+    async def _invalidate_cache(
+        cache_key: str,
+        to_invalidate_extra: dict[str, Any] | None,
+        pattern_to_invalidate_extra: list[str] | None,
+        kwargs: dict[str, Any],
+    ) -> None:
         """Invalidate cache for non-GET requests."""
         await client.delete(cache_key)
         
