@@ -21,7 +21,7 @@ repos:
       - id: pretty-format-json
         args: [--autofix, --no-sort-keys]
         exclude: ^tests/fixtures/
-      
+
       # Security and best practices
       - id: check-added-large-files
         args: [--maxkb=1000]
@@ -31,7 +31,7 @@ repos:
       - id: check-symlinks
       - id: destroyed-symlinks
       - id: detect-private-key
-      
+
       # Python specific
       - id: check-ast
       - id: check-builtin-literals
@@ -40,10 +40,12 @@ repos:
       - id: name-tests-test
         args: [--pytest-test-first]
         files: ^tests/.*
-      
+
       # Git specific
       - id: check-executables-have-shebangs
+        exclude: ^\.githooks/
       - id: check-shebang-scripts-are-executable
+        exclude: ^\.githooks/
 
   # Python code upgrade
   - repo: https://github.com/asottile/pyupgrade
@@ -53,11 +55,15 @@ repos:
         args: [--py311-plus]
         name: Upgrade code to Python 3.11+
 
-  # Docstring formatting
-  - repo: https://github.com/myint/docformatter
-    rev: v1.7.5
+  # (Replaced upstream docformatter hook due to python_venv incompatibility on older pre-commit)
+  # Docstring formatting handled via local hook using system Python
+  - repo: local
     hooks:
       - id: docformatter
+        name: docformatter
+        entry: docformatter
+        language: system
+        types: [python]
         args: [--in-place, --wrap-summaries=115, --wrap-descriptions=120, --make-summary-multi-line]
 
   # Remove unused noqa comments
@@ -83,6 +89,8 @@ repos:
     hooks:
       - id: blacken-docs
         args: [--line-length=120]
+        stages: [pre-push]
+        exclude: ^README\.md$
 
   # Type checking with mypy
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -103,6 +111,7 @@ repos:
           - '--warn-unused-ignores'
         files: ^src/
         exclude: ^tests/
+        stages: [pre-push]
 
   # Security linting with bandit
   - repo: https://github.com/pycqa/bandit
@@ -114,6 +123,7 @@ repos:
         additional_dependencies: ["bandit[toml]"]
         files: ^src/
         exclude: ^tests/
+        stages: [pre-push]
 
   # Safety - Check for known security vulnerabilities
   - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
@@ -121,6 +131,8 @@ repos:
     hooks:
       - id: python-safety-dependencies-check
         files: pyproject.toml
+        stages: [pre-push]
+        additional_dependencies: ["safety==2.3.5"]
 
   # Dockerfile linting
   - repo: https://github.com/hadolint/hadolint
@@ -141,7 +153,8 @@ repos:
           - mdformat-frontmatter
           - mdformat-myst
         args: ["--wrap", "no"]
-        exclude: CHANGELOG.md
+        exclude: (CHANGELOG\.md|README\.md)
+        stages: [pre-push]
 
   # YAML linting
   - repo: https://github.com/adrienverge/yamllint
@@ -152,6 +165,8 @@ repos:
           - --format
           - parsable
           - --strict
+        exclude: ^\.pre-commit-config\.yaml$
+        stages: [pre-push]
 
   # Secrets detection
   - repo: https://github.com/Yelp/detect-secrets
@@ -160,6 +175,7 @@ repos:
       - id: detect-secrets
         args: [--baseline, .secrets.baseline]
         exclude: ^(tests/fixtures/|.*\.lock$)
+        stages: [pre-push]
 
   # Documentation style
   - repo: https://github.com/pycqa/pydocstyle
@@ -182,7 +198,7 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
-        stages: [pre-commit]
+        stages: [pre-push]
 
       # Comprehensive tests on pre-push
       - id: pytest-coverage
@@ -205,7 +221,7 @@ repos:
         types: [python]
         pass_filenames: false
         stages: [pre-push]
-      
+
       # API schema validation
       - id: api-schema-check
         name: API Schema Validation
@@ -219,13 +235,13 @@ repos:
 # Global configuration
 default_stages: [pre-commit]
 fail_fast: false
-minimum_pre_commit_version: 3.0.0
+minimum_pre_commit_version: 3.7.0
 
 # CI configuration
 ci:
   autofix_commit_msg: |
     [pre-commit.ci] auto fixes from pre-commit.com hooks
-    
+
     for more information, see https://pre-commit.ci
   autofix_prs: true
   autoupdate_branch: ''

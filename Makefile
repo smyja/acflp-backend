@@ -7,6 +7,7 @@
 .PHONY: db-upgrade db-downgrade db-reset db-seed
 .PHONY: run run-dev run-prod run-worker
 .PHONY: docs docs-serve deploy-staging deploy-prod
+.PHONY: venv venv-remove python-version
 
 # Default target
 help: ## Show this help message
@@ -15,14 +16,22 @@ help: ## Show this help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 # =============================================================================
+# Tool autodetection (fallback if `uv` is not installed)
+# =============================================================================
+
+SHELL := /bin/bash
+UV_BIN := $(shell command -v uv 2>/dev/null)
+UV_PIP := $(if $(UV_BIN),uv pip,pip)
+
+# =============================================================================
 # Environment Setup
 # =============================================================================
 
 install: ## Install production dependencies
-	uv pip install .
+	$(UV_PIP) install .
 
 install-dev: ## Install development dependencies
-	uv pip install -e ".[dev]"
+	$(UV_PIP) install -e ".[dev]"
 
 clean: ## Clean up cache files and build artifacts
 	find . -type f -name "*.pyc" -delete
@@ -227,13 +236,25 @@ shell: ## Start interactive Python shell with app context
 	python -c "from app.main import app; import IPython; IPython.embed()"
 
 requirements: ## Generate requirements.txt from pyproject.toml
-	uv pip compile pyproject.toml -o requirements.txt
+	@if command -v uv >/dev/null 2>&1; then \
+		uv pip compile pyproject.toml -o requirements.txt; \
+	elif command -v pip-compile >/dev/null 2>&1; then \
+		pip-compile pyproject.toml -o requirements.txt; \
+	else \
+		echo "Install 'uv' or 'pip-tools' (pip-compile) to generate requirements.txt"; \
+	fi
 
 requirements-dev: ## Generate dev requirements
-	uv pip compile pyproject.toml --extra dev -o requirements-dev.txt
+	@if command -v uv >/dev/null 2>&1; then \
+		uv pip compile pyproject.toml --extra dev -o requirements-dev.txt; \
+	elif command -v pip-compile >/dev/null 2>&1; then \
+		pip-compile pyproject.toml --extra dev -o requirements-dev.txt; \
+	else \
+		echo "Install 'uv' or 'pip-tools' (pip-compile) to generate requirements-dev.txt"; \
+	fi
 
 update-deps: ## Update all dependencies
-	uv pip install --upgrade -e ".[dev]"
+	$(UV_PIP) install --upgrade -e ".[dev]"
 
 check-deps: ## Check for dependency vulnerabilities
 	safety check
@@ -245,9 +266,28 @@ pip-audit: ## Run pip-audit for security vulnerabilities
 # Git Hooks and Pre-commit
 # =============================================================================
 
+GIT_HOOKS_PATH := $(shell git config --get core.hooksPath 2>/dev/null)
+
 install-hooks: ## Install git hooks
+	@if [ -n "$(GIT_HOOKS_PATH)" ]; then \
+		echo "[info] git core.hooksPath is set to '$(GIT_HOOKS_PATH)'."; \
+		echo "[info] Using .githooks wrapper scripts instead of 'pre-commit install'."; \
+		echo "[info] Run: make install-githooks"; \
+		exit 0; \
+	fi
 	pre-commit install
 	pre-commit install --hook-type commit-msg
+	pre-commit install --hook-type pre-push
+
+install-githooks: ## Copy .githooks/* into configured core.hooksPath
+	@if [ -z "$(GIT_HOOKS_PATH)" ]; then \
+		echo "[error] core.hooksPath is not set. Either run 'git config core.hooksPath .githooks' or unset it and use 'make install-hooks'."; \
+		exit 1; \
+	fi
+	mkdir -p "$(GIT_HOOKS_PATH)"
+	cp -f .githooks/* "$(GIT_HOOKS_PATH)/"
+	chmod +x "$(GIT_HOOKS_PATH)/pre-commit" "$(GIT_HOOKS_PATH)/pre-push" "$(GIT_HOOKS_PATH)/commit-msg"
+	echo "[ok] Installed git hooks to $(GIT_HOOKS_PATH)"
 
 run-hooks: ## Run pre-commit hooks on all files
 	pre-commit run --all-files
@@ -266,3 +306,24 @@ export ENVIRONMENT
 export SECRET_KEY
 export POSTGRES_URL
 export REDIS_URL
+VENV ?= .venv
+
+# Create a local Python 3.11 virtual environment
+venv: ## Create a Python 3.11 virtual environment in .venv
+	@set -e; \
+	if command -v python3.11 >/dev/null 2>&1; then PY=python3.11; \
+	elif command -v python3 >/dev/null 2>&1; then PY=python3; \
+	else PY=python; fi; \
+	$$PY -V; \
+	$$PY -m venv $(VENV); \
+	. $(VENV)/bin/activate; \
+	python -m pip install --upgrade pip setuptools wheel; \
+	echo "Virtualenv created at $(VENV). Activate with: source $(VENV)/bin/activate";
+
+# Remove the virtual environment
+venv-remove: ## Remove the virtual environment
+	rm -rf $(VENV)
+
+# Print the Python version in the current shell
+python-version: ## Print Python version and path
+	@python -V && which python

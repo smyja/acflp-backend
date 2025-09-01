@@ -33,21 +33,21 @@
   </a>
 </p>
 
----
+______________________________________________________________________
 
 ## 📖 Documentation
 
 📚 **[Visit our comprehensive documentation at benavlabs.github.io/FastAPI-boilerplate](https://benavlabs.github.io/FastAPI-boilerplate/)**
 
 > **⚠️ Documentation Status**
-> 
-> This is our first version of the documentation. While functional, we acknowledge it's rough around the edges - there's a huge amount to document and we needed to start somewhere! We built this foundation (with a lot of AI assistance) so we can improve upon it. 
-> 
+>
+> This is our first version of the documentation. While functional, we acknowledge it's rough around the edges - there's a huge amount to document and we needed to start somewhere! We built this foundation (with a lot of AI assistance) so we can improve upon it.
+>
 > Better documentation, examples, and guides are actively being developed. Contributions and feedback are greatly appreciated!
 
 This README provides a quick reference for LLMs and developers, but the full documentation contains detailed guides, examples, and best practices.
 
----
+______________________________________________________________________
 
 ## 0. About
 
@@ -62,8 +62,7 @@ This README provides a quick reference for LLMs and developers, but the full doc
 - [`Docker Compose`](https://docs.docker.com/compose/) With a single command, create and start all the services from your configuration.
 - [`NGINX`](https://nginx.org/en/) High-performance low resource consumption web server used for Reverse Proxy and Load Balancing.
 
-> \[!TIP\] 
-> There's a `SQLModel` version as well, but it's no longer updated: [SQLModel-boilerplate](https://github.com/igorbenav/SQLModel-boilerplate).
+> \[!TIP\] There's a `SQLModel` version as well, but it's no longer updated: [SQLModel-boilerplate](https://github.com/igorbenav/SQLModel-boilerplate).
 
 ## 1. Features
 
@@ -118,7 +117,7 @@ This README provides a quick reference for LLMs and developers, but the full doc
    1. [Admin Panel](#513-admin-panel)
    1. [Running](#514-running)
    1. [Create Application](#515-create-application)
-   2. [Opting Out of Services](#516-opting-out-of-services)
+   1. [Opting Out of Services](#516-opting-out-of-services)
 1. [Running in Production](#6-running-in-production)
    1. [Uvicorn Workers with Gunicorn](#61-uvicorn-workers-with-gunicorn)
    1. [Running With NGINX](#62-running-with-nginx)
@@ -150,15 +149,13 @@ Then clone your created repository (I'm using the base for the example)
 git clone https://github.com/igormagalhaesr/FastAPI-boilerplate
 ```
 
-> \[!TIP\]
-> If you are in a hurry, you may use one of the following templates (containing a `.env`, `docker-compose.yml` and `Dockerfile`):
+> \[!TIP\] If you are in a hurry, you may use one of the following templates (containing a `.env`, `docker-compose.yml` and `Dockerfile`):
 
 - [Running locally with uvicorn](https://gist.github.com/igorbenav/48ad745120c3f77817e094f3a609111a)
 - [Runing in staging with gunicorn managing uvicorn workers](https://gist.github.com/igorbenav/d0518d4f6bdfb426d4036090f74905ee)
 - [Running in production with NGINX](https://gist.github.com/igorbenav/232c3b73339d6ca74e2bf179a5ef48a1)
 
-> \[!WARNING\]
-> Do not forget to place `docker-compose.yml` and `Dockerfile` in the `root` folder, while `.env` should be in the `src` folder.
+> \[!WARNING\] Do not forget to place `docker-compose.yml` and `Dockerfile` in the `root` folder, while `.env` should be in the `src` folder.
 
 ### 3.1 Environment Variables (.env)
 
@@ -214,8 +211,7 @@ Once in the main PGAdmin screen, click Add Server:
 1. is the value you specified in `POSTGRES_USER`
 1. Is the value you specified in `POSTGRES_PASSWORD`
 
-For crypt:
-Start by running
+For crypt: Start by running
 
 ```sh
 openssl rand -hex 32
@@ -267,8 +263,9 @@ CRUD_ADMIN_REDIS_SSL=false                 # default=false, use SSL for Redis co
 ```
 
 **Session Backend Options:**
+
 - **Memory** (default): Development-friendly, sessions reset on restart
-- **Redis** (production): High performance, scalable, persistent sessions  
+- **Redis** (production): High performance, scalable, persistent sessions
 - **Database**: Audit-friendly with admin visibility
 - **Hybrid**: Redis performance + database audit trail
 
@@ -295,8 +292,7 @@ REDIS_QUEUE_HOST="your_host" # default "localhost", if using docker compose you 
 REDIS_QUEUE_PORT=6379 # default "6379", if using docker compose you should use "6379"
 ```
 
-> \[!WARNING\]
-> You may use the same redis for both caching and queue while developing, but the recommendation is using two separate containers for production.
+> \[!WARNING\] You may use the same redis for both caching and queue while developing, but the recommendation is using two separate containers for production.
 
 To create the first tier:
 
@@ -333,19 +329,30 @@ ENVIRONMENT="local"
 
 ### 3.2 Docker Compose (preferred)
 
-To do it using docker compose, ensure you have docker and docker compose installed, then:
-While in the base project directory (FastAPI-boilerplate here), run:
+To do it using docker compose, ensure you have docker and docker compose installed, then: While in the base project directory (FastAPI-boilerplate here), run:
 
 ```sh
 docker compose up
 ```
 
-You should have a `web` container, `postgres` container, a `worker` container and a `redis` container running.
-Then head to `http://127.0.0.1:8000/docs`.
+You should have a `web` container, `postgres` container, a `worker` container and a `redis` container running. Then head to `http://127.0.0.1:8000/docs`.
 
 ### 3.3 From Scratch
 
-Install uv:
+Create and use a Python 3.11 virtual environment (recommended):
+
+```sh
+# Create local venv (uses python3.11 if available)
+make venv
+
+# Activate it for your shell session
+source .venv/bin/activate
+
+# Install dev deps inside the venv
+make install-dev
+```
+
+Install uv (optional but faster installs):
 
 ```sh
 pip install uv
@@ -389,8 +396,7 @@ Ensuring it ran without any problem.
 
 #### 4.2.2. Running PostgreSQL With Docker
 
-> \[!NOTE\]
-> If you already have a PostgreSQL running, you may skip this step.
+> \[!NOTE\] If you already have a PostgreSQL running, you may skip this step.
 
 Install docker if you don't have it yet, then run:
 
@@ -422,8 +428,7 @@ docker run -d \
 
 #### 4.2.3. Running redis With Docker
 
-> \[!NOTE\]
-> If you already have a redis running, you may skip this step.
+> \[!NOTE\] If you already have a redis running, you may skip this step.
 
 Install docker if you don't have it yet, then run:
 
@@ -457,15 +462,13 @@ While in the `root` folder, run to start the application with uvicorn server:
 uv run uvicorn src.app.main:app --reload
 ```
 
-> \[!TIP\]
-> The --reload flag enables auto-reload once you change (and save) something in the project
+> \[!TIP\] The --reload flag enables auto-reload once you change (and save) something in the project
 
 ### 4.3 Creating the first superuser
 
 #### 4.3.1 Docker Compose
 
-> \[!WARNING\]
-> Make sure DB and tables are created before running create_superuser (db should be running and the api should run at least once before)
+> \[!WARNING\] Make sure DB and tables are created before running create_superuser (db should be running and the api should run at least once before)
 
 If you are using docker compose, you should uncomment this part of the docker-compose.yml:
 
@@ -529,15 +532,13 @@ uv run python -m src.scripts.create_first_superuser
 
 ### 4.3.3 Creating the first tier
 
-> \[!WARNING\]
-> Make sure DB and tables are created before running create_tier (db should be running and the api should run at least once before)
+> \[!WARNING\] Make sure DB and tables are created before running create_tier (db should be running and the api should run at least once before)
 
 To create the first tier it's similar, you just replace `create_superuser` for `create_tier` service or `create_first_superuser` to `create_first_tier` for scripts. If using `docker compose`, do not forget to uncomment the `create_tier` service in `docker-compose.yml`.
 
 ### 4.4 Database Migrations
 
-> \[!WARNING\]
-> To create the tables if you did not create the endpoints, ensure that you import the models in src/app/models/__init__.py. This step is crucial to create the new tables.
+> \[!WARNING\] To create the tables if you did not create the endpoints, ensure that you import the models in src/app/models/__init__.py. This step is crucial to create the new tables.
 
 If you are using the db in docker, you need to change this in `docker-compose.yml` to run migrations:
 
@@ -578,8 +579,7 @@ And to apply the migration
 uv run alembic upgrade head
 ```
 
-> [!NOTE]
-> If you do not have uv, you may run it without uv after running `pip install alembic`
+> \[!NOTE\] If you do not have uv, you may run it without uv after running `pip install alembic`
 
 ## 5. Extending
 
@@ -708,13 +708,11 @@ First, you may want to take a look at the project structure and understand what 
 
 ### 5.2 Database Model
 
-Create the new entities and relationships and add them to the model <br>
-![diagram](https://user-images.githubusercontent.com/43156212/284426387-bdafc637-0473-4b71-890d-29e79da288cf.png)
+Create the new entities and relationships and add them to the model <br> ![diagram](https://user-images.githubusercontent.com/43156212/284426387-bdafc637-0473-4b71-890d-29e79da288cf.png)
 
 #### 5.2.1 Token Blacklist
 
-Note that this table is used to blacklist the `JWT` tokens (it's how you log a user out) <br>
-![diagram](https://user-images.githubusercontent.com/43156212/284426382-b2f3c0ca-b8ea-4f20-b47e-de1bad2ca283.png)
+Note that this table is used to blacklist the `JWT` tokens (it's how you log a user out) <br> ![diagram](https://user-images.githubusercontent.com/43156212/284426382-b2f3c0ca-b8ea-4f20-b47e-de1bad2ca283.png)
 
 ### 5.3 SQLAlchemy Models
 
@@ -722,8 +720,7 @@ Note that this table is used to blacklist the `JWT` tokens (it's how you log a u
 
 Inside `app/models`, create a new `entity.py` for each new entity (replacing entity with the name) and define the attributes according to [SQLAlchemy 2.0 standards](https://docs.sqlalchemy.org/en/20/orm/mapping_styles.html#orm-mapping-styles):
 
-> \[!WARNING\]
-> Note that since it inherits from `Base`, the new model is mapped as a python `dataclass`, so optional attributes (arguments with a default value) should be defined after required  attributes.
+> \[!WARNING\] Note that since it inherits from `Base`, the new model is mapped as a python `dataclass`, so optional attributes (arguments with a default value) should be defined after required attributes.
 
 ```python
 from sqlalchemy import String, DateTime
@@ -794,8 +791,7 @@ class EntityDelete(BaseModel):
 
 > 📖 **[See database migrations guide in our docs](https://benavlabs.github.io/FastAPI-boilerplate/user-guide/database/migrations/)**
 
-> \[!WARNING\]
-> To create the tables if you did not create the endpoints, ensure that you import the models in src/app/models/__init__.py. This step is crucial to create the new models.
+> \[!WARNING\] To create the tables if you did not create the endpoints, ensure that you import the models in src/app/models/__init__.py. This step is crucial to create the new models.
 
 Then, while in the `src` folder, run Alembic migrations:
 
@@ -854,8 +850,7 @@ To get a list of objects with the attributes, you should use the get_multi:
 user = await crud_users.get_multi(db=db, offset=3, limit=100, name="User Userson")
 ```
 
-> \[!WARNING\]
-> Note that get_multi returns a python `dict`.
+> \[!WARNING\] Note that get_multi returns a python `dict`.
 
 Which will return a python dict with the following structure:
 
@@ -919,8 +914,7 @@ user = await crud_users.count(db=db, name="User Userson")
 
 #### 5.6.6 Update
 
-To update you pass an `object` which may be a `pydantic schema` or just a regular `dict`, and the kwargs.
-You will update with `objects` the rows that match your `kwargs`.
+To update you pass an `object` which may be a `pydantic schema` or just a regular `dict`, and the kwargs. You will update with `objects` the rows that match your `kwargs`.
 
 ```python
 # Here I'm updating the user with username == "myusername".
@@ -1161,8 +1155,7 @@ The `cache` decorator allows you to cache the results of FastAPI endpoint functi
 
 Caching the response of an endpoint is really simple, just apply the `cache` decorator to the endpoint function.
 
-> \[!WARNING\]
-> Note that you should always pass request as a variable to your endpoint function if you plan to use the cache decorator.
+> \[!WARNING\] Note that you should always pass request as a variable to your endpoint function if you plan to use the cache decorator.
 
 ```python
 ...
@@ -1205,8 +1198,7 @@ Passing resource_id_name is usually preferred.
 
 ### 5.9 More Advanced Caching
 
-The behaviour of the `cache` decorator changes based on the request method of your endpoint.
-It caches the result if you are passing it to a **GET** endpoint, and it invalidates the cache with this key_prefix and id if passed to other endpoints (**PATCH**, **DELETE**).
+The behaviour of the `cache` decorator changes based on the request method of your endpoint. It caches the result if you are passing it to a **GET** endpoint, and it invalidates the cache with this key_prefix and id if passed to other endpoints (**PATCH**, **DELETE**).
 
 #### Invalidating Extra Keys
 
@@ -1255,8 +1247,7 @@ async def patch_post(
     ...
 ```
 
-> \[!WARNING\]
-> Note that adding `to_invalidate_extra` will not work for **GET** requests.
+> \[!WARNING\] Note that adding `to_invalidate_extra` will not work for **GET** requests.
 
 #### Invalidate Extra By Pattern
 
@@ -1292,8 +1283,7 @@ async def read_posts(
     return paginated_response(crud_data=posts_data, page=page, items_per_page=items_per_page)
 ```
 
-Just passing `to_invalidate_extra` will not work to invalidate this cache, since the key will change based on the `page` and `items_per_page` values.
-To overcome this we may use the `pattern_to_invalidate_extra` parameter:
+Just passing `to_invalidate_extra` will not work to invalidate this cache, since the key will change based on the `page` and `items_per_page` values. To overcome this we may use the `pattern_to_invalidate_extra` parameter:
 
 ```python
 @router.patch("/{username}/post/{id}")
@@ -1311,8 +1301,7 @@ async def patch_post(
 
 Now it will invalidate all caches with a key that matches the pattern `"{username}_posts:*`, which will work for the paginated responses.
 
-> \[!CAUTION\]
-> Using `pattern_to_invalidate_extra` can be resource-intensive on large datasets. Use it judiciously and consider the potential impact on Redis performance. Be cautious with patterns that could match a large number of keys, as deleting many keys simultaneously may impact the performance of the Redis server.
+> \[!CAUTION\] Using `pattern_to_invalidate_extra` can be resource-intensive on large datasets. Use it judiciously and consider the potential impact on Redis performance. Be cautious with patterns that could match a large number of keys, as deleting many keys simultaneously may impact the performance of the Redis server.
 
 #### Client-side Caching
 
@@ -1324,8 +1313,7 @@ For `client-side caching`, all you have to do is let the `Settings` class define
 
 Depending on the problem your API is solving, you might want to implement a job queue. A job queue allows you to run tasks in the background, and is usually aimed at functions that require longer run times and don't directly impact user response in your frontend. As a rule of thumb, if a task takes more than 2 seconds to run, can be executed asynchronously, and its result is not needed for the next step of the user's interaction, then it is a good candidate for the job queue.
 
-> [!TIP]
-> Very common candidates for background functions are calls to and from LLM endpoints (e.g. OpenAI or Openrouter). This is because they span tens of seconds and often need to be further parsed and saved.
+> \[!TIP\] Very common candidates for background functions are calls to and from LLM endpoints (e.g. OpenAI or Openrouter). This is because they span tens of seconds and often need to be further parsed and saved.
 
 #### Background task creation
 
@@ -1367,11 +1355,9 @@ async def get_task(task_id: str):
 
 And finally run the worker in parallel to your fastapi application.
 
-> [!IMPORTANT]
-> For any change to the `sample_background_task` to be reflected in the worker, you need to restart the worker (e.g. the docker container).
+> \[!IMPORTANT\] For any change to the `sample_background_task` to be reflected in the worker, you need to restart the worker (e.g. the docker container).
 
-If you are using `docker compose`, the worker is already running.
-If you are doing it from scratch, run while in the `root` folder:
+If you are using `docker compose`, the worker is already running. If you are doing it from scratch, run while in the `root` folder:
 
 ```sh
 uv run arq src.app.core.worker.settings.WorkerSettings
@@ -1412,8 +1398,7 @@ async def your_background_function(
     ...
 ```
 
-> [!WARNING]
-> When using database sessions, you will want to use Pydantic objects. However, these objects don't mingle well with the seralization required by ARQ tasks and will be retrieved as a dictionary.
+> \[!WARNING\] When using database sessions, you will want to use Pydantic objects. However, these objects don't mingle well with the seralization required by ARQ tasks and will be retrieved as a dictionary.
 
 ### 5.11 Rate Limiting
 
@@ -1455,8 +1440,7 @@ And a `pro` tier:
 
 Then I'll associate a `rate_limit` for the path `api/v1/tasks/task` for each of them, I'll associate a `rate limit` for the path `api/v1/tasks/task`.
 
-> \[!WARNING\]
-> Do not forget to add `api/v1/...` or any other prefix to the beggining of your path. For the structure of the boilerplate, `api/v1/<rest_of_the_path>`
+> \[!WARNING\] Do not forget to add `api/v1/...` or any other prefix to the beggining of your path. For the structure of the boilerplate, `api/v1/<rest_of_the_path>`
 
 1 request every hour (3600 seconds) for the free tier:
 
@@ -1514,22 +1498,18 @@ And read the `rate_limits` for the `pro` tier to ensure it's working (`GET api/v
 }
 ```
 
-Now, whenever an authenticated user makes a `POST` request to the `api/v1/tasks/task`, they'll use the quota that is defined by their tier.
-You may check this getting the token from the `api/v1/login` endpoint, then passing it in the request header:
+Now, whenever an authenticated user makes a `POST` request to the `api/v1/tasks/task`, they'll use the quota that is defined by their tier. You may check this getting the token from the `api/v1/login` endpoint, then passing it in the request header:
 
 ```sh
 curl -X POST 'http://127.0.0.1:8000/api/v1/tasks/task?message=test' \
 -H 'Authorization: Bearer <your-token-here>'
 ```
 
-> \[!TIP\]
-> Since the `rate_limiter_dependency` dependency uses the `get_optional_user` dependency instead of `get_current_user`, it will not require authentication to be used, but will behave accordingly if the user is authenticated (and token is passed in header). If you want to ensure authentication, also use `get_current_user` if you need.
+> \[!TIP\] Since the `rate_limiter_dependency` dependency uses the `get_optional_user` dependency instead of `get_current_user`, it will not require authentication to be used, but will behave accordingly if the user is authenticated (and token is passed in header). If you want to ensure authentication, also use `get_current_user` if you need.
 
-To change a user's tier, you may just use the `PATCH api/v1/user/{username}/tier` endpoint.
-Note that for flexibility (since this is a boilerplate), it's not necessary to previously inform a tier_id to create a user, but you probably should set every user to a certain tier (let's say `free`) once they are created.
+To change a user's tier, you may just use the `PATCH api/v1/user/{username}/tier` endpoint. Note that for flexibility (since this is a boilerplate), it's not necessary to previously inform a tier_id to create a user, but you probably should set every user to a certain tier (let's say `free`) once they are created.
 
-> \[!WARNING\]
-> If a user does not have a `tier` or the tier does not have a defined `rate limit` for the path and the token is still passed to the request, the default `limit` and `period` will be used, this will be saved in `app/logs`.
+> \[!WARNING\] If a user does not have a `tier` or the tier does not have a defined `rate limit` for the path and the token is still passed to the request, the default `limit` and `period` will be used, this will be saved in `app/logs`.
 
 ### 5.12 JWT Authentication
 
@@ -1586,6 +1566,7 @@ This authentication setup in the provides a robust, secure, and user-friendly wa
 The boilerplate includes a powerful web-based admin interface built with [CRUDAdmin](https://github.com/benavlabs/crudadmin) that provides a comprehensive database management system.
 
 > **About CRUDAdmin**: CRUDAdmin is a modern admin interface generator for FastAPI applications. Learn more at:
+>
 > - **📚 Documentation**: [benavlabs.github.io/crudadmin](https://benavlabs.github.io/crudadmin/)
 > - **💻 GitHub**: [github.com/benavlabs/crudadmin](https://github.com/benavlabs/crudadmin)
 
@@ -1610,6 +1591,7 @@ http://localhost:8000/admin
 ```
 
 Use the admin credentials you defined in your `.env` file:
+
 - Username: `ADMIN_USERNAME`
 - Password: `ADMIN_PASSWORD`
 
@@ -1636,7 +1618,7 @@ from your_app.schemas import YourCreateSchema, YourUpdateSchema
 
 def register_admin_views(admin: CRUDAdmin) -> None:
     # ... existing models ...
-    
+
     admin.add_view(
         model=YourModel,
         create_schema=YourCreateSchema,
@@ -1696,8 +1678,7 @@ If you are using docker compose, just running the following command should ensur
 docker compose up
 ```
 
-If you are doing it from scratch, ensure your postgres and your redis are running, then
-while in the `root` folder, run to start the application with uvicorn server:
+If you are doing it from scratch, ensure your postgres and your redis are running, then while in the `root` folder, run to start the application with uvicorn server:
 
 ```sh
 uv run uvicorn src.app.main:app --reload
@@ -1708,6 +1689,7 @@ And for the worker:
 ```sh
 uv run arq src.app.core.worker.settings.WorkerSettings
 ```
+
 ### 5.15 Create Application
 
 If you want to stop tables from being created every time you run the api, you should disable this here:
@@ -1842,8 +1824,7 @@ command: gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:
 
 Here it's running with 4 workers, but you should test it depending on how many cores your machine has.
 
-To do this if you are using docker compose, just replace the comment:
-This part in `docker-compose.yml`:
+To do this if you are using docker compose, just replace the comment: This part in `docker-compose.yml`:
 
 ```YAML
 # docker-compose.yml
@@ -1863,8 +1844,7 @@ Should be changed to:
 command: gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000
 ```
 
-And the same in `Dockerfile`:
-This part:
+And the same in `Dockerfile`: This part:
 
 ```Dockerfile
 # Dockerfile
@@ -1882,8 +1862,7 @@ Should be changed to:
 CMD ["gunicorn", "app.main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker". "-b", "0.0.0.0:8000"]
 ```
 
-> \[!CAUTION\]
-> Do not forget to set the `ENVIRONMENT` in `.env` to `production` unless you want the API docs to be public.
+> \[!CAUTION\] Do not forget to set the `ENVIRONMENT` in `.env` to `production` unless you want the API docs to be public.
 
 ### 6.2 Running with NGINX
 
@@ -1951,8 +1930,7 @@ services:
     # command: gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000
 ```
 
-Then pick the way you want to run (uvicorn or gunicorn managing uvicorn workers) in `Dockerfile`.
-The one you want should be uncommented, comment the other one.
+Then pick the way you want to run (uvicorn or gunicorn managing uvicorn workers) in `Dockerfile`. The one you want should be uncommented, comment the other one.
 
 ```Dockerfile
 # Dockerfile
@@ -2020,8 +1998,7 @@ server {
 
 And finally, on your browser: `http://localhost/docs`.
 
-> \[!WARNING\]
-> Note that we are using `fastapi1:8000` and `fastapi2:8000` as examples, you should replace it with the actual name of your service and the port it's running on.
+> \[!WARNING\] Note that we are using `fastapi1:8000` and `fastapi2:8000` as examples, you should replace it with the actual name of your service and the port it's running on.
 
 ## 7. Testing
 
@@ -2040,7 +2017,7 @@ touch tests/test_items.py
 Follow the structure in `tests/test_user.py` for examples. Our tests use:
 
 - **pytest** with **pytest-asyncio** for async support
-- **unittest.mock** for mocking dependencies  
+- **unittest.mock** for mocking dependencies
 - **AsyncMock** for async function mocking
 - **Faker** for generating test data
 
@@ -2058,9 +2035,9 @@ class TestWriteUser:
         with patch("src.app.api.v1.users.crud_users") as mock_crud:
             mock_crud.exists = AsyncMock(return_value=False)
             mock_crud.create = AsyncMock(return_value=Mock(id=1))
-            
+
             result = await write_user(Mock(), sample_user_data, mock_db)
-            
+
             assert result.id == 1
             mock_crud.create.assert_called_once()
 ```
@@ -2111,16 +2088,31 @@ filterwarnings = [
 ### 7.4 Test Structure
 
 - **Unit Tests** (`test_*_unit.py`): Fast, isolated tests with mocked dependencies
-- **Fixtures** (`conftest.py`): Shared test fixtures and mock setups  
+- **Fixtures** (`conftest.py`): Shared test fixtures and mock setups
 - **Helpers** (`tests/helpers/`): Utilities for generating test data and mocks
 
 ### 7.5 Benefits of Our Approach
 
-✅ **Fast**: Tests run in ~0.04 seconds  
-✅ **Reliable**: No external dependencies required  
-✅ **Isolated**: Each test focuses on one piece of functionality  
-✅ **Maintainable**: Easy to understand and modify  
-✅ **CI/CD Ready**: Run anywhere without infrastructure setup
+✅ **Fast**: Tests run in ~0.04 seconds ✅ **Reliable**: No external dependencies required ✅ **Isolated**: Each test focuses on one piece of functionality ✅ **Maintainable**: Easy to understand and modify ✅ **CI/CD Ready**: Run anywhere without infrastructure setup
+
+## Git Hooks: Auto-run Ruff and Checks
+
+Tired of manually running `ruff`? Install hooks once per clone so formatting and linting run automatically:
+
+- Install dev deps (includes `pre-commit`): `make install-dev`
+- Install hooks: `make install-hooks`
+
+What this does
+
+- `pre-commit` (on commit): Runs fast checks on changed files, including `ruff` auto-fix and `ruff-format`.
+- `commit-msg`: Validates commit messages if configured.
+- `pre-push`: Runs the faster unit test suite before pushing.
+
+Helpful commands
+
+- Run all hooks against the repository: `make run-hooks`
+
+CI already runs `ruff check` and `ruff format --check`. For full parity with local hooks across the team, you can add a `pre-commit` step in CI or enable pre-commit.ci for automatic PR fixes.
 
 ## 8. Contributing
 
@@ -2141,8 +2133,7 @@ This project was inspired by a few projects, it's based on them with things chan
 
 ## 11. Contact
 
-Benav Labs – [benav.io](https://benav.io)
-[github.com/benavlabs](https://github.com/benavlabs/)
+Benav Labs – [benav.io](https://benav.io) [github.com/benavlabs](https://github.com/benavlabs/)
 
 <hr>
 <a href="https://benav.io">
