@@ -82,8 +82,10 @@ repos:
         args: [--fix, --exit-non-zero-on-fix]
         types_or: [python, pyi]
         exclude: ^tests/
+        stages: [pre-commit, pre-push]
       - id: ruff-format
         types_or: [python, pyi]
+        stages: [pre-commit, pre-push]
 
   # Documentation formatting
   - repo: https://github.com/asottile/blacken-docs
