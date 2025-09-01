@@ -8,4 +8,3 @@ async def maybe_await(value):
     regular mocks or direct values.
     """
     return await value if inspect.isawaitable(value) else value
-

@@ -15,8 +15,8 @@ from ...core.security import (
     create_refresh_token,
     get_password_hash,
 )
-from ...crud.crud_users import crud_users
 from ...core.utils.async_utils import maybe_await
+from ...crud.crud_users import crud_users
 from ...schemas.user import UserCreateInternal
 
 router = APIRouter(prefix="/auth", tags=["oauth"])
@@ -153,7 +153,7 @@ async def google_callback(
         frontend_redirect_url = f"{settings.FRONTEND_URL}/auth/callback?token={access_token}"
         redirect = RedirectResponse(url=frontend_redirect_url)
         # Add attribute for tests that access ".url" directly
-        setattr(redirect, "url", frontend_redirect_url)
+        redirect.url = frontend_redirect_url
         return redirect
 
     except HTTPException:
@@ -169,7 +169,7 @@ async def google_callback(
         # Redirect to frontend with generic error message
         error_redirect_url = f"{settings.FRONTEND_URL}/auth/error?message=Authentication failed"
         redirect = RedirectResponse(url=error_redirect_url)
-        setattr(redirect, "url", error_redirect_url)
+        redirect.url = error_redirect_url
         return redirect
 
 

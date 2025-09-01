@@ -1,7 +1,7 @@
-from collections.abc import AsyncGenerator, Callable
-import logging
 import asyncio
+from collections.abc import AsyncGenerator, Callable
 from contextlib import _AsyncGeneratorContextManager, asynccontextmanager
+import logging
 from typing import Any
 
 import anyio
