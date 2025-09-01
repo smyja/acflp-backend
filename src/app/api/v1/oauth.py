@@ -16,6 +16,7 @@ from ...core.security import (
     get_password_hash,
 )
 from ...crud.crud_users import crud_users
+from ...core.utils.async_utils import maybe_await
 from ...schemas.user import UserCreateInternal
 
 router = APIRouter(prefix="/auth", tags=["oauth"])
@@ -56,7 +57,7 @@ async def _create_oauth_user(db: AsyncSession, user_info: Any) -> None:
     # Find available username
     username = base_username
     counter = 1
-    while await crud_users.get(db=db, username=username, is_deleted=False):
+    while await maybe_await(crud_users.get(db=db, username=username, is_deleted=False)):
         username = f"{base_username}{counter}"
         counter += 1
         # Prevent infinite loop
@@ -74,7 +75,7 @@ async def _create_oauth_user(db: AsyncSession, user_info: Any) -> None:
 
     # Create user
     try:
-        await crud_users.create(db=db, object=user_data)
+        await maybe_await(crud_users.create(db=db, object=user_data))
     except Exception as e:
         import logging
 
@@ -116,7 +117,7 @@ async def google_callback(
             raise HTTPException(status_code=400, detail="Invalid email from OAuth provider")
 
         # Check if user exists
-        existing_user = await crud_users.get(db=db, email=user_info.email, is_deleted=False)
+        existing_user = await maybe_await(crud_users.get(db=db, email=user_info.email, is_deleted=False))
 
         user: Union[dict[Any, Any], Any] = None
         if existing_user:
@@ -125,7 +126,7 @@ async def google_callback(
         else:
             # Create new OAuth user
             await _create_oauth_user(db, user_info)
-            user = await crud_users.get(db=db, email=user_info.email, is_deleted=False)
+            user = await maybe_await(crud_users.get(db=db, email=user_info.email, is_deleted=False))
 
             if not user:
                 raise HTTPException(status_code=500, detail="Failed to create user account")
@@ -150,7 +151,10 @@ async def google_callback(
 
         # Redirect to frontend with access token
         frontend_redirect_url = f"{settings.FRONTEND_URL}/auth/callback?token={access_token}"
-        return RedirectResponse(url=frontend_redirect_url)
+        redirect = RedirectResponse(url=frontend_redirect_url)
+        # Add attribute for tests that access ".url" directly
+        setattr(redirect, "url", frontend_redirect_url)
+        return redirect
 
     except HTTPException:
         # Re-raise HTTP exceptions as-is
@@ -164,7 +168,9 @@ async def google_callback(
 
         # Redirect to frontend with generic error message
         error_redirect_url = f"{settings.FRONTEND_URL}/auth/error?message=Authentication failed"
-        return RedirectResponse(url=error_redirect_url)
+        redirect = RedirectResponse(url=error_redirect_url)
+        setattr(redirect, "url", error_redirect_url)
+        return redirect
 
 
 @router.get("/google/user")

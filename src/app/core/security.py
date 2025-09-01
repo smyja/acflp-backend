@@ -13,6 +13,7 @@ from ..crud.crud_users import crud_users
 from .config import settings
 from .db.crud_token_blacklist import crud_token_blacklist
 from .schemas import TokenBlacklistCreate, TokenData
+from .utils.async_utils import maybe_await
 
 logger = logging.getLogger(__name__)
 
@@ -50,9 +51,9 @@ def get_password_hash(password: str) -> str:
 
 async def authenticate_user(username_or_email: str, password: str, db: AsyncSession) -> dict[str, Any] | Literal[False]:
     if "@" in username_or_email:
-        db_user = await crud_users.get(db=db, email=username_or_email, is_deleted=False)
+        db_user = await maybe_await(crud_users.get(db=db, email=username_or_email, is_deleted=False))
     else:
-        db_user = await crud_users.get(db=db, username=username_or_email, is_deleted=False)
+        db_user = await maybe_await(crud_users.get(db=db, username=username_or_email, is_deleted=False))
 
     if not db_user:
         return False
@@ -131,7 +132,7 @@ async def verify_token(token: str, expected_token_type: Union[str, TokenType], d
 
     # blacklist
     try:
-        if await crud_token_blacklist.exists(db, token=token):
+        if await maybe_await(crud_token_blacklist.exists(db, token=token)):
             return None
     except Exception:
         logger.exception("Blacklist check failed")
@@ -170,9 +171,11 @@ async def blacklist_token(token: str, db) -> None:
         return
 
     try:
-        await crud_token_blacklist.create(
-            db,
-            object=TokenBlacklistCreate(token=token, expires_at=expires_at),
+        await maybe_await(
+            crud_token_blacklist.create(
+                db,
+                object=TokenBlacklistCreate(token=token, expires_at=expires_at),
+            )
         )
     except Exception:
         logger.exception("Failed to create blacklist entry")

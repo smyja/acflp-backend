@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..core.db.database import async_get_db
 from ..core.exceptions.http_exceptions import ForbiddenException, UnauthorizedException
 from ..core.security import TokenType, oauth2_scheme, verify_token
+from ..core.utils.async_utils import maybe_await
 from ..crud.crud_users import crud_users
 
 logger = logging.getLogger(__name__)
@@ -20,9 +21,9 @@ async def get_current_user(
         raise UnauthorizedException("User not authenticated.")
 
     if "@" in token_data.username_or_email:
-        user = await crud_users.get(db=db, email=token_data.username_or_email, is_deleted=False)
+        user = await maybe_await(crud_users.get(db=db, email=token_data.username_or_email, is_deleted=False))
     else:
-        user = await crud_users.get(db=db, username=token_data.username_or_email, is_deleted=False)
+        user = await maybe_await(crud_users.get(db=db, username=token_data.username_or_email, is_deleted=False))
 
     if user:
         return cast(dict[str, Any], user)

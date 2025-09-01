@@ -47,17 +47,8 @@ async def get_next_task(
     await crud_tasks.update(
         db=db,
         object=TaskUpdate(
-            title=None,
-            text=None,
-            media_url=None,
-            source_language=None,
-            target_language=None,
-            task_type=None,
             status="in_progress",
             assignee_id=current_user["id"],
-            translated_text=None,
-            translated_by_user_id=None,
-            translated_at=None,
         ),
         id=task_row.id,
     )

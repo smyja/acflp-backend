@@ -105,16 +105,16 @@ async def patch_user(
         raise ForbiddenException()
 
     if values.username != db_user.username:
-        existing_username = await crud_users.exists(db=db, username=values.username)
+        existing_username = await _await_maybe(crud_users.exists(db=db, username=values.username))
         if existing_username:
             raise DuplicateValueException("Username not available")
 
     if values.email != db_user.email:
-        existing_email = await crud_users.exists(db=db, email=values.email)
+        existing_email = await _await_maybe(crud_users.exists(db=db, email=values.email))
         if existing_email:
             raise DuplicateValueException("Email is already registered")
 
-    await crud_users.update(db=db, object=values, username=username)
+    await _await_maybe(crud_users.update(db=db, object=values, username=username))
     return {"message": "User updated"}
 
 
@@ -133,7 +133,7 @@ async def erase_user(
     if username != current_user["username"]:
         raise ForbiddenException()
 
-    await crud_users.delete(db=db, username=username)
+    await _await_maybe(crud_users.delete(db=db, username=username))
     await blacklist_token(token=token, db=db)
     return {"message": "User deleted"}
 
