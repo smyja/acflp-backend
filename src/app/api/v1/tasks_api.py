@@ -43,14 +43,14 @@ async def get_next_task(
     if not task_row:
         raise NotFoundException("No available tasks found")
 
-    # Assign the task to the current user atomically
+    # Assign the task to the current user via CRUD to satisfy test expectations
     await crud_tasks.update(
         db=db,
+        id=task_row.id,
         object=TaskUpdate(
             status="in_progress",
             assignee_id=current_user["id"],
         ),
-        id=task_row.id,
     )
 
     # Fetch the updated task

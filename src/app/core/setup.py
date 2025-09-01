@@ -1,4 +1,6 @@
 from collections.abc import AsyncGenerator, Callable
+import logging
+import asyncio
 from contextlib import _AsyncGeneratorContextManager, asynccontextmanager
 from typing import Any
 
@@ -51,7 +53,38 @@ async def close_redis_cache_pool() -> None:
 
 # -------------- queue --------------
 async def create_redis_queue_pool() -> None:
-    queue.pool = await create_pool(RedisSettings(host=settings.REDIS_QUEUE_HOST, port=settings.REDIS_QUEUE_PORT))
+    """Create ARQ Redis pool with retries and do not crash app on failure.
+
+    In containerized environments the Redis service may not be resolvable/ready
+    when the API starts. We attempt a few retries and if it still fails we log
+    and continue startup without a queue pool.
+    """
+    logger = logging.getLogger(__name__)
+    max_retries = 5
+    delay_seconds = 2
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            queue.pool = await create_pool(
+                RedisSettings(host=settings.REDIS_QUEUE_HOST, port=settings.REDIS_QUEUE_PORT)
+            )
+            # successful connection if we got a pool
+            logger.info("Connected to Redis queue at %s:%s", settings.REDIS_QUEUE_HOST, settings.REDIS_QUEUE_PORT)
+            return
+        except Exception as e:  # pragma: no cover - integration/runtime behavior
+            remaining = max_retries - attempt
+            logger.error(
+                "redis connection error %s:%s %s, %s retries remaining...",
+                settings.REDIS_QUEUE_HOST,
+                settings.REDIS_QUEUE_PORT,
+                e,
+                remaining,
+            )
+            if remaining <= 0:
+                logger.error("Giving up initializing Redis queue; continuing without queue pool")
+                queue.pool = None
+                return
+            await asyncio.sleep(delay_seconds)
 
 
 async def close_redis_queue_pool() -> None:

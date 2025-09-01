@@ -16,8 +16,10 @@ services:
     # expose:
     #   - "8000"
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - ./src:/code/src
       - ./src/.env:/code/.env
@@ -51,8 +53,10 @@ services:
     env_file:
       - ./src/.env
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - ./src:/code/src
       - ./src/.env:/code/.env
