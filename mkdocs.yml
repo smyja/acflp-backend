@@ -25,7 +25,7 @@ theme:
       primary: custom
       accent: custom
       toggle:
-        icon: material/brightness-7 
+        icon: material/brightness-7
         name: Switch to dark mode
 
     - media: "(prefers-color-scheme: dark)"
@@ -152,4 +152,4 @@ extra_css:
 
 repo_name: benavlabs/fastapi-boilerplate
 repo_url: https://github.com/benavlabs/fastapi-boilerplate
-edit_uri: edit/main/docs/ 
+edit_uri: edit/main/docs/

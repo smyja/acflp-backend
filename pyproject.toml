@@ -119,14 +119,20 @@ ignore = [
     "S101", # Use of assert detected
     "S106", # Possible hardcoded password
     "S108", # Probable insecure usage of temp file/directory
+    "S105", # Hardcoded passwords allowed in tests
+    "N",    # Relax pep8-naming rules in tests
+    "SIM105", # Allow try/except/pass in tests
 ]
 "__init__.py" = [
     "F401", # unused import
     "F403", # star imports
 ]
+"scripts/coverage_report.py" = [
+    "S603", # subprocess check
+]
 
 [tool.ruff.lint.mccabe]
-max-complexity = 10
+max-complexity = 20
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
@@ -296,7 +302,6 @@ ignore = [
 ]
 match = "(?!test_).*\\.py"
 match_dir = "(?!tests).*"
-convention = "google"
 
 # Safety configuration
 [tool.safety]

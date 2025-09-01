@@ -181,7 +181,7 @@ async def _delete_keys_by_pattern(pattern: str) -> None:
             await client.delete(*keys)
 
 
-def _create_cache_decorator(  # noqa: C901
+def _create_cache_decorator(
     key_prefix: str,
     resource_id_name: Any,
     expiration: int,
@@ -189,14 +189,18 @@ def _create_cache_decorator(  # noqa: C901
     to_invalidate_extra: dict[str, Any] | None,
     pattern_to_invalidate_extra: list[str] | None,
 ) -> Callable:
-    """Create the actual cache decorator with the given parameters."""
+    """
+    Create the actual cache decorator with the given parameters.
+    """
 
     async def _handle_get_request(
         cache_key: str,
         to_invalidate_extra: dict[str, Any] | None,
         pattern_to_invalidate_extra: list[str] | None,
     ) -> Any | None:
-        """Handle GET request caching logic."""
+        """
+        Handle GET request caching logic.
+        """
         if to_invalidate_extra is not None or pattern_to_invalidate_extra is not None:
             raise InvalidRequestError
 
@@ -207,7 +211,9 @@ def _create_cache_decorator(  # noqa: C901
         return None
 
     async def _cache_result(cache_key: str, result: Any, expiration: int) -> Any:
-        """Cache the result for GET requests."""
+        """
+        Cache the result for GET requests.
+        """
         serializable_data = jsonable_encoder(result)
         serialized_data = json.dumps(serializable_data)
 
@@ -223,7 +229,9 @@ def _create_cache_decorator(  # noqa: C901
         pattern_to_invalidate_extra: list[str] | None,
         kwargs: dict[str, Any],
     ) -> None:
-        """Invalidate cache for non-GET requests."""
+        """
+        Invalidate cache for non-GET requests.
+        """
         assert client is not None  # Already checked in _process_request
         await client.delete(cache_key)
 
@@ -239,7 +247,9 @@ def _create_cache_decorator(  # noqa: C901
                 await _delete_keys_by_pattern(formatted_pattern + "*")
 
     async def _process_request(func: Callable, request: Request, args: tuple, kwargs: dict[str, Any]) -> Any:
-        """Process the request with caching logic."""
+        """
+        Process the request with caching logic.
+        """
         if client is None:
             raise MissingClientError
 
@@ -321,6 +331,7 @@ def cache(
     from my_module import cache  # Replace with your actual module and imports
 
     app = FastAPI()
+
 
     # Define a sample endpoint with caching
     @app.get("/sample/{resource_id}")

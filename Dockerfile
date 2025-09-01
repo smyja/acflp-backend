@@ -181,5 +181,3 @@ CMD ["gunicorn", "src.app.main:app", \
      "--max-requests", "1000", \
      "--max-requests-jitter", "100", \
      "--preload"]
-
- 

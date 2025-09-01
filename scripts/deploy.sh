@@ -131,7 +131,7 @@ load_config() {
         source "$CONFIG_FILE"
         log_info "Configuration loaded from $CONFIG_FILE"
     fi
-    
+
     # Set defaults if not provided
     DOCKER_REGISTRY=${DOCKER_REGISTRY:-"ghcr.io"}
     IMAGE_TAG=${IMAGE_TAG:-"latest"}
@@ -149,7 +149,7 @@ setup_logging() {
 # Validate environment
 validate_environment() {
     log_info "Validating environment: $ENVIRONMENT"
-    
+
     case $ENVIRONMENT in
         staging|production)
             log_success "Environment validation passed"
@@ -164,26 +164,26 @@ validate_environment() {
 # Pre-deployment checks
 pre_deployment_checks() {
     log_info "Running pre-deployment checks..."
-    
+
     # Check if we're in the right directory
     if [[ ! -f "$PROJECT_ROOT/pyproject.toml" ]]; then
         log_error "Not in project root directory"
         exit 1
     fi
-    
+
     # Check Git status
     if [[ -n "$(git status --porcelain)" ]] && [[ "$FORCE_DEPLOY" != true ]]; then
         log_error "Working directory is not clean. Commit or stash changes first."
         exit 1
     fi
-    
+
     # Check if on correct branch
     current_branch=$(git branch --show-current)
     if [[ "$ENVIRONMENT" == "production" ]] && [[ "$current_branch" != "main" ]] && [[ "$FORCE_DEPLOY" != true ]]; then
         log_error "Production deployments must be from 'main' branch. Current branch: $current_branch"
         exit 1
     fi
-    
+
     # Check required tools
     for tool in docker docker-compose uv pytest; do
         if ! command -v "$tool" &> /dev/null; then
@@ -191,7 +191,7 @@ pre_deployment_checks() {
             exit 1
         fi
     done
-    
+
     log_success "Pre-deployment checks passed"
 }
 
@@ -201,14 +201,14 @@ run_tests() {
         log_warning "Skipping tests as requested"
         return 0
     fi
-    
+
     log_info "Running test suite..."
-    
+
     if [[ "$DRY_RUN" == true ]]; then
         log_info "[DRY RUN] Would run: make ci-test"
         return 0
     fi
-    
+
     if ! make ci-test; then
         if [[ "$FORCE_DEPLOY" == true ]]; then
             log_warning "Tests failed but continuing due to --force flag"
@@ -227,14 +227,14 @@ run_security_checks() {
         log_warning "Skipping security checks as requested"
         return 0
     fi
-    
+
     log_info "Running security checks..."
-    
+
     if [[ "$DRY_RUN" == true ]]; then
         log_info "[DRY RUN] Would run: make ci-security"
         return 0
     fi
-    
+
     if ! make ci-security; then
         if [[ "$FORCE_DEPLOY" == true ]]; then
             log_warning "Security checks failed but continuing due to --force flag"
@@ -250,50 +250,50 @@ run_security_checks() {
 # Build Docker image
 build_image() {
     log_info "Building Docker image..."
-    
+
     local image_name="${DOCKER_REGISTRY}/acflp-backend:${IMAGE_TAG}"
-    
+
     if [[ "$DRY_RUN" == true ]]; then
         log_info "[DRY RUN] Would build: $image_name"
         return 0
     fi
-    
+
     if ! docker build --target production -t "$image_name" .; then
         log_error "Docker build failed"
         exit 1
     fi
-    
+
     log_success "Docker image built successfully: $image_name"
 }
 
 # Push Docker image
 push_image() {
     log_info "Pushing Docker image to registry..."
-    
+
     local image_name="${DOCKER_REGISTRY}/acflp-backend:${IMAGE_TAG}"
-    
+
     if [[ "$DRY_RUN" == true ]]; then
         log_info "[DRY RUN] Would push: $image_name"
         return 0
     fi
-    
+
     if ! docker push "$image_name"; then
         log_error "Docker push failed"
         exit 1
     fi
-    
+
     log_success "Docker image pushed successfully"
 }
 
 # Deploy to environment
 deploy() {
     log_info "Deploying to $ENVIRONMENT environment..."
-    
+
     if [[ "$DRY_RUN" == true ]]; then
         log_info "[DRY RUN] Would deploy to $ENVIRONMENT"
         return 0
     fi
-    
+
     case $ENVIRONMENT in
         staging)
             deploy_staging
@@ -307,26 +307,26 @@ deploy() {
 # Deploy to staging
 deploy_staging() {
     log_info "Deploying to staging environment..."
-    
+
     # Update staging deployment
     if ! kubectl set image deployment/acflp-backend-staging acflp-backend="${DOCKER_REGISTRY}/acflp-backend:${IMAGE_TAG}" --namespace=staging; then
         log_error "Staging deployment failed"
         exit 1
     fi
-    
+
     # Wait for rollout
     if ! kubectl rollout status deployment/acflp-backend-staging --namespace=staging --timeout="${DEPLOY_TIMEOUT}s"; then
         log_error "Staging rollout failed"
         exit 1
     fi
-    
+
     log_success "Staging deployment completed"
 }
 
 # Deploy to production
 deploy_production() {
     log_info "Deploying to production environment..."
-    
+
     # Additional confirmation for production
     if [[ "$FORCE_DEPLOY" != true ]]; then
         read -p "Are you sure you want to deploy to PRODUCTION? (yes/no): " -r
@@ -335,34 +335,34 @@ deploy_production() {
             exit 0
         fi
     fi
-    
+
     # Blue-green deployment for production
     log_info "Starting blue-green deployment..."
-    
+
     # Deploy to green environment first
     if ! kubectl set image deployment/acflp-backend-green acflp-backend="${DOCKER_REGISTRY}/acflp-backend:${IMAGE_TAG}" --namespace=production; then
         log_error "Green deployment failed"
         exit 1
     fi
-    
+
     # Wait for green rollout
     if ! kubectl rollout status deployment/acflp-backend-green --namespace=production --timeout="${DEPLOY_TIMEOUT}s"; then
         log_error "Green rollout failed"
         exit 1
     fi
-    
+
     # Health check on green environment
     if ! health_check "green"; then
         log_error "Health check failed on green environment"
         exit 1
     fi
-    
+
     # Switch traffic to green
     if ! kubectl patch service acflp-backend-service -p '{"spec":{"selector":{"version":"green"}}}' --namespace=production; then
         log_error "Failed to switch traffic to green"
         exit 1
     fi
-    
+
     log_success "Production deployment completed"
 }
 
@@ -370,7 +370,7 @@ deploy_production() {
 health_check() {
     local version=${1:-"current"}
     log_info "Running health check for $version version..."
-    
+
     local health_url
     case $ENVIRONMENT in
         staging)
@@ -384,21 +384,21 @@ health_check() {
             fi
             ;;
     esac
-    
+
     local attempts=0
     local max_attempts=$((HEALTH_CHECK_TIMEOUT / 5))
-    
+
     while [[ $attempts -lt $max_attempts ]]; do
         if curl -f -s "$health_url" > /dev/null; then
             log_success "Health check passed for $version version"
             return 0
         fi
-        
+
         attempts=$((attempts + 1))
         log_info "Health check attempt $attempts/$max_attempts failed, retrying in 5 seconds..."
         sleep 5
     done
-    
+
     log_error "Health check failed after $max_attempts attempts"
     return 1
 }
@@ -406,12 +406,12 @@ health_check() {
 # Rollback deployment
 rollback_deployment() {
     log_info "Rolling back deployment in $ENVIRONMENT environment..."
-    
+
     if [[ "$DRY_RUN" == true ]]; then
         log_info "[DRY RUN] Would rollback deployment in $ENVIRONMENT"
         return 0
     fi
-    
+
     case $ENVIRONMENT in
         staging)
             kubectl rollout undo deployment/acflp-backend-staging --namespace=staging
@@ -422,7 +422,7 @@ rollback_deployment() {
             kubectl patch service acflp-backend-service -p '{"spec":{"selector":{"version":"blue"}}}' --namespace=production
             ;;
     esac
-    
+
     log_success "Rollback completed"
 }
 
@@ -430,7 +430,7 @@ rollback_deployment() {
 send_notification() {
     local status=$1
     local message=$2
-    
+
     if [[ -n "${SLACK_WEBHOOK:-}" ]]; then
         local color
         case $status in
@@ -439,7 +439,7 @@ send_notification() {
             error) color="danger" ;;
             *) color="#439FE0" ;;
         esac
-        
+
         local payload=$(cat <<EOF
 {
     "attachments": [
@@ -469,7 +469,7 @@ send_notification() {
 }
 EOF
         )
-        
+
         curl -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK" || true
     fi
 }
@@ -485,16 +485,16 @@ main() {
     parse_args "$@"
     load_config
     setup_logging
-    
+
     # Set up trap for cleanup
     trap cleanup EXIT
-    
+
     if [[ "$ROLLBACK" == true ]]; then
         rollback_deployment
         send_notification "success" "Rollback completed for $ENVIRONMENT environment"
         exit 0
     fi
-    
+
     validate_environment
     pre_deployment_checks
     run_tests
@@ -503,7 +503,7 @@ main() {
     push_image
     deploy
     health_check
-    
+
     log_success "Deployment completed successfully!"
     send_notification "success" "Deployment completed successfully for $ENVIRONMENT environment"
 }

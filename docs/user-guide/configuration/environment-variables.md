@@ -91,11 +91,7 @@ REFRESH_TOKEN_EXPIRE_DAYS=7
 - `ACCESS_TOKEN_EXPIRE_MINUTES`: How long access tokens remain valid
 - `REFRESH_TOKEN_EXPIRE_DAYS`: How long refresh tokens remain valid
 
-!!! danger "Security Warning"
-    Never use default values in production. Generate a strong secret key:
-    ```bash
-    openssl rand -hex 32
-    ```
+!!! danger "Security Warning" Never use default values in production. Generate a strong secret key: `bash     openssl rand -hex 32     `
 
 ### Redis Configuration
 
@@ -107,7 +103,7 @@ REDIS_CACHE_HOST="localhost"  # Use "redis" for Docker Compose
 REDIS_CACHE_PORT=6379
 
 # ------------- redis queue -------------
-REDIS_QUEUE_HOST="localhost"  # Use "redis" for Docker Compose  
+REDIS_QUEUE_HOST="localhost"  # Use "redis" for Docker Compose
 REDIS_QUEUE_PORT=6379
 
 # ------------- redis rate limit -------------
@@ -256,7 +252,7 @@ The main `Settings` class inherits from multiple setting groups:
 ```python
 class Settings(
     AppSettings,
-    PostgresSettings, 
+    PostgresSettings,
     CryptSettings,
     FirstUserSettings,
     RedisCacheSettings,
@@ -279,6 +275,7 @@ class CustomSettings(BaseSettings):
     CUSTOM_TIMEOUT: int = 30
     ENABLE_FEATURE_X: bool = False
 
+
 # Add to main Settings class
 class Settings(
     AppSettings,
@@ -300,7 +297,7 @@ class Settings(
     CryptSettings,
     FirstUserSettings,
     # Removed: RedisCacheSettings
-    # Removed: RedisQueueSettings  
+    # Removed: RedisQueueSettings
     # Removed: RedisRateLimiterSettings
     EnvironmentSettings,
 ):
@@ -326,21 +323,23 @@ SQLAlchemy connection pool settings in `src/app/core/db/database.py`:
 ```python
 engine = create_async_engine(
     DATABASE_URL,
-    pool_size=20,          # Number of connections to maintain
-    max_overflow=30,       # Additional connections allowed
-    pool_timeout=30,       # Seconds to wait for connection
-    pool_recycle=1800,     # Seconds before connection refresh
+    pool_size=20,  # Number of connections to maintain
+    max_overflow=30,  # Additional connections allowed
+    pool_timeout=30,  # Seconds to wait for connection
+    pool_recycle=1800,  # Seconds before connection refresh
 )
 ```
 
 ### Database Best Practices
 
 **Connection Pool Sizing:**
+
 - Start with `pool_size=20`, `max_overflow=30`
 - Monitor connection usage and adjust based on load
 - Use connection pooling monitoring tools
 
 **Migration Strategy:**
+
 - Always backup database before running migrations
 - Test migrations on staging environment first
 - Use `alembic revision --autogenerate` for model changes
@@ -357,9 +356,7 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-        )
+        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 ```
 
 ### CORS Configuration
@@ -371,7 +368,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],  # Specify allowed origins
     allow_credentials=True,
-    allow_methods=["GET", "POST"],           # Specify allowed methods
+    allow_methods=["GET", "POST"],  # Specify allowed methods
     allow_headers=["*"],
 )
 ```
@@ -380,10 +377,7 @@ app.add_middleware(
 
 ```python
 # Never use wildcard (*) in production
-allow_origins=[
-    "https://yourapp.com",
-    "https://www.yourapp.com"
-],
+allow_origins = (["https://yourapp.com", "https://www.yourapp.com"],)
 ```
 
 ### Security Headers
@@ -392,6 +386,7 @@ Add security headers middleware:
 
 ```python
 from starlette.middleware.base import BaseHTTPMiddleware
+
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
@@ -416,11 +411,7 @@ from logging.handlers import RotatingFileHandler
 LOGGING_LEVEL = logging.INFO
 
 # Configure file rotation
-file_handler = RotatingFileHandler(
-    'logs/app.log', 
-    maxBytes=10485760,  # 10MB
-    backupCount=5       # Keep 5 backup files
-)
+file_handler = RotatingFileHandler("logs/app.log", maxBytes=10485760, backupCount=5)  # 10MB  # Keep 5 backup files
 ```
 
 ### Structured Logging
@@ -435,7 +426,7 @@ structlog.configure(
         structlog.stdlib.filter_by_level,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
-        structlog.processors.JSONRenderer()
+        structlog.processors.JSONRenderer(),
     ],
     logger_factory=structlog.stdlib.LoggerFactory(),
 )
@@ -445,11 +436,7 @@ structlog.configure(
 
 ```python
 # Environment-specific log levels
-LOG_LEVELS = {
-    "local": logging.DEBUG,
-    "staging": logging.INFO,
-    "production": logging.WARNING
-}
+LOG_LEVELS = {"local": logging.DEBUG, "staging": logging.INFO, "production": logging.WARNING}
 
 LOGGING_LEVEL = LOG_LEVELS.get(settings.ENVIRONMENT, logging.INFO)
 ```
@@ -500,12 +487,12 @@ Add custom middleware in `src/app/core/setup.py`:
 ```python
 def create_application(router, settings, **kwargs):
     app = FastAPI(...)
-    
+
     # Add custom middleware
     app.add_middleware(CustomMiddleware, setting=value)
     app.add_middleware(TimingMiddleware)
     app.add_middleware(RequestIDMiddleware)
-    
+
     return app
 ```
 
@@ -516,9 +503,10 @@ Implement feature flags:
 ```python
 class FeatureSettings(BaseSettings):
     ENABLE_ADVANCED_CACHING: bool = False
-    ENABLE_ANALYTICS: bool = True  
+    ENABLE_ANALYTICS: bool = True
     ENABLE_EXPERIMENTAL_FEATURES: bool = False
     ENABLE_API_VERSIONING: bool = True
+
 
 # Use in endpoints
 if settings.ENABLE_ADVANCED_CACHING:
@@ -537,7 +525,7 @@ async def health_check():
         "status": "healthy",
         "database": await check_database_health(),
         "redis": await check_redis_health(),
-        "version": settings.APP_VERSION
+        "version": settings.APP_VERSION,
     }
 ```
 
@@ -551,11 +539,11 @@ Add validation to prevent misconfiguration:
 def validate_settings():
     if not settings.SECRET_KEY:
         raise ValueError("SECRET_KEY must be set")
-    
+
     if settings.ENVIRONMENT == "production":
         if settings.SECRET_KEY == "dev-secret-key":
             raise ValueError("Production must use secure SECRET_KEY")
-        
+
         if settings.DEBUG:
             raise ValueError("DEBUG must be False in production")
 ```
@@ -578,6 +566,7 @@ async def startup_event():
 ### Common Issues
 
 **Environment Variables Not Loading:**
+
 ```bash
 # Check file location and permissions
 ls -la src/.env
@@ -590,6 +579,7 @@ python -c "from src.app.core.config import settings; print(settings.APP_NAME)"
 ```
 
 **Database Connection Failed:**
+
 ```bash
 # Test connection manually
 psql -h localhost -U postgres -d myapp
@@ -601,13 +591,14 @@ brew services list | grep postgresql
 ```
 
 **Redis Connection Failed:**
+
 ```bash
 # Test Redis connection
 redis-cli -h localhost -p 6379 ping
 
 # Check Redis status
 systemctl status redis
-# or on macOS  
+# or on macOS
 brew services list | grep redis
 ```
 
@@ -621,10 +612,11 @@ import asyncio
 from src.app.core.config import settings
 from src.app.core.db.database import async_get_db
 
+
 async def test_config():
     print(f"App: {settings.APP_NAME}")
     print(f"Environment: {settings.ENVIRONMENT}")
-    
+
     # Test database
     try:
         db = await anext(async_get_db())
@@ -632,20 +624,23 @@ async def test_config():
         await db.close()
     except Exception as e:
         print(f"✗ Database connection failed: {e}")
-    
+
     # Test Redis (if enabled)
     try:
         from src.app.core.utils.cache import redis_client
+
         await redis_client.ping()
         print("✓ Redis connection successful")
     except Exception as e:
         print(f"✗ Redis connection failed: {e}")
+
 
 if __name__ == "__main__":
     asyncio.run(test_config())
 ```
 
 Run with:
+
 ```bash
 uv run python test_config.py
-``` 
+```

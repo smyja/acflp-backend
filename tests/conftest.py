@@ -1,22 +1,18 @@
 from collections.abc import Callable, Generator
+from datetime import UTC
 from typing import Any
 from unittest.mock import AsyncMock, Mock
-import uuid
-from datetime import datetime, timezone
 
-import pytest
 from faker import Faker
 from fastapi.testclient import TestClient
+import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
-
 from src.app.core.config import settings
 from src.app.main import app
-from src.app.schemas.user import UserRead, UserCreate
-
-from src.app.schemas.task import TaskRead, TaskCreate
+from src.app.schemas.task import TaskRead
 
 DATABASE_URI = settings.postgres_uri
 DATABASE_PREFIX = settings.POSTGRES_SYNC_PREFIX
@@ -49,13 +45,17 @@ def override_dependency(dependency: Callable[..., Any], mocked_response: Any) ->
 
 @pytest.fixture
 def mock_db():
-    """Mock database session for unit tests."""
+    """
+    Mock database session for unit tests.
+    """
     return Mock(spec=AsyncSession)
 
 
 @pytest.fixture
 def mock_redis():
-    """Mock Redis connection for unit tests."""
+    """
+    Mock Redis connection for unit tests.
+    """
     mock_redis = Mock()
     mock_redis.get = AsyncMock(return_value=None)
     mock_redis.set = AsyncMock(return_value=True)
@@ -65,8 +65,11 @@ def mock_redis():
 
 @pytest.fixture(scope="session")
 def event_loop():
-    """Create an instance of the default event loop for the test session."""
+    """
+    Create an instance of the default event loop for the test session.
+    """
     import asyncio
+
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
@@ -83,10 +86,13 @@ def event_loop():
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_cache_client():
-    """Initialize cache client for tests to prevent MissingClientError."""
-    from src.app.core.utils import cache
+    """
+    Initialize cache client for tests to prevent MissingClientError.
+    """
     from unittest.mock import AsyncMock, Mock
-    
+
+    from src.app.core.utils import cache
+
     # Create a mock Redis client for tests
     mock_client = Mock()
     mock_client.get = AsyncMock(return_value=None)
@@ -99,44 +105,42 @@ def setup_cache_client():
     mock_client.pipeline.return_value.set = Mock()
     mock_client.pipeline.return_value.expire = Mock()
     mock_client.pipeline.return_value.execute = AsyncMock(return_value=[])
-    
+
     # Set the mock client globally for tests
     cache.client = mock_client
-    
+
     yield
-    
+
     # Clean up after tests
     cache.client = None
 
 
 @pytest.fixture(scope="function")
 async def async_db_session():
-    """Create a fresh async database session for each test with proper cleanup."""
-    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+    """
+    Create a fresh async database session for each test with proper cleanup.
+    """
+    from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
     from sqlalchemy.orm import sessionmaker
-    from src.app.core.db.database import Base
     from src.app.core.config import settings
-    
+    from src.app.core.db.database import Base
+
     # Create test database engine
     test_engine = create_async_engine(
-        settings.POSTGRES_ASYNC_PREFIX + settings.postgres_uri,
-        echo=False,
-        pool_pre_ping=True
+        settings.POSTGRES_ASYNC_PREFIX + settings.postgres_uri, echo=False, pool_pre_ping=True
     )
-    
+
     try:
         # Create all tables
         async with test_engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-        
+
         # Create session
-        TestSessionLocal = sessionmaker(
-            test_engine, class_=AsyncSession, expire_on_commit=False
-        )
-        
+        TestSessionLocal = sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
+
         async with TestSessionLocal() as session:
             yield session
-    
+
     finally:
         # Clean up - drop all tables with CASCADE
         try:
@@ -144,40 +148,42 @@ async def async_db_session():
                 await conn.run_sync(lambda sync_conn: Base.metadata.drop_all(sync_conn, checkfirst=True))
         except Exception:
             pass  # Ignore cleanup errors
-        
+
         await test_engine.dispose()
 
 
 @pytest.fixture
 async def test_user_factory(async_db_session):
-    """Factory for creating test users with realistic data."""
-    from src.app.models.user import User
+    """
+    Factory for creating test users with realistic data.
+    """
     from src.app.core.security import get_password_hash
-    
+    from src.app.models.user import User
+
     created_users = []
-    
+
     async def _create_user(
         name: str = None,
-        username: str = None, 
+        username: str = None,
         email: str = None,
         password: str = "testpassword123",
-        is_superuser: bool = False
+        is_superuser: bool = False,
     ):
         user = User(
             name=name or fake.name(),
             username=username or fake.user_name(),
             email=email or fake.email(),
             hashed_password=get_password_hash(password),
-            is_superuser=is_superuser
+            is_superuser=is_superuser,
         )
         async_db_session.add(user)
         await async_db_session.commit()
         await async_db_session.refresh(user)
         created_users.append(user)
         return user
-    
+
     yield _create_user
-    
+
     # Cleanup
     for user in created_users:
         await async_db_session.delete(user)
@@ -186,20 +192,22 @@ async def test_user_factory(async_db_session):
 
 @pytest.fixture
 async def test_task_factory(async_db_session):
-    """Factory for creating test tasks with realistic data."""
+    """
+    Factory for creating test tasks with realistic data.
+    """
     from src.app.models.task import Task
-    
+
     created_tasks = []
-    
+
     async def _create_task(
         created_by_user_id: int,
         title: str = None,
         text: str = None,
         source_language: str = "en",
-        target_language: str = "es", 
+        target_language: str = "es",
         task_type: str = "text_translation",
         status: str = "pending",
-        assignee_id: int = None
+        assignee_id: int = None,
     ):
         task = Task(
             created_by_user_id=created_by_user_id,
@@ -209,16 +217,16 @@ async def test_task_factory(async_db_session):
             target_language=target_language,
             task_type=task_type,
             status=status,
-            assignee_id=assignee_id
+            assignee_id=assignee_id,
         )
         async_db_session.add(task)
         await async_db_session.commit()
         await async_db_session.refresh(task)
         created_tasks.append(task)
         return task
-    
+
     yield _create_task
-    
+
     # Cleanup
     for task in created_tasks:
         await async_db_session.delete(task)
@@ -227,7 +235,9 @@ async def test_task_factory(async_db_session):
 
 @pytest.fixture
 def sample_user_data():
-    """Generate sample user data for tests."""
+    """
+    Generate sample user data for tests.
+    """
     return {
         "name": fake.name(),
         "username": fake.user_name(),
@@ -238,7 +248,9 @@ def sample_user_data():
 
 @pytest.fixture
 def sample_user_read():
-    """Generate a sample UserRead object."""
+    """
+    Generate a sample UserRead object.
+    """
     import uuid
 
     from src.app.schemas.user import UserRead
@@ -259,7 +271,9 @@ def sample_user_read():
 
 @pytest.fixture
 def current_user_dict():
-    """Mock current user from auth dependency."""
+    """
+    Mock current user from auth dependency.
+    """
     return {
         "id": 1,
         "username": fake.user_name(),
@@ -269,18 +283,11 @@ def current_user_dict():
     }
 
 
-
-
-
-
-
-
-
-
-
 @pytest.fixture
 def sample_task_data():
-    """Generate sample task data for tests."""
+    """
+    Generate sample task data for tests.
+    """
     return {
         "title": fake.sentence(nb_words=4),
         "text": fake.text(max_nb_chars=200),
@@ -291,7 +298,9 @@ def sample_task_data():
 
 @pytest.fixture
 def sample_task_read():
-    """Generate a sample TaskRead object."""
+    """
+    Generate a sample TaskRead object.
+    """
     return TaskRead(
         id=1,
         title=fake.sentence(nb_words=4),
@@ -300,7 +309,7 @@ def sample_task_read():
         created_by_user_id=1,
         assignee_id=None,
         translated_by_user_id=None,
-        created_at=fake.date_time(tzinfo=timezone.utc),
+        created_at=fake.date_time(tzinfo=UTC),
         source_language="en",
         target_language="es",
         task_type="text_translation",
@@ -312,19 +321,25 @@ def sample_task_read():
 
 @pytest.fixture
 def mock_jwt_token():
-    """Mock JWT token for authentication tests."""
+    """
+    Mock JWT token for authentication tests.
+    """
     return "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwiZXhwIjoxNjQwOTk1MjAwfQ.test_token"
 
 
 @pytest.fixture
 def auth_headers(mock_jwt_token):
-    """Generate authorization headers for authenticated requests."""
+    """
+    Generate authorization headers for authenticated requests.
+    """
     return {"Authorization": f"Bearer {mock_jwt_token}"}
 
 
 @pytest.fixture
 def superuser_dict():
-    """Mock superuser from auth dependency."""
+    """
+    Mock superuser from auth dependency.
+    """
     return {
         "id": 2,
         "username": "admin",
@@ -336,128 +351,132 @@ def superuser_dict():
 
 @pytest.fixture
 def async_client():
-    """Create a test client for API testing."""
+    """
+    Create a test client for API testing.
+    """
     from fastapi.testclient import TestClient
     from src.app.main import app
-    
+
     with TestClient(app) as client:
         yield client
 
 
 @pytest.fixture
 def authenticated_client(async_client):
-    """Create an authenticated HTTP client with a test user."""
+    """
+    Create an authenticated HTTP client with a test user.
+    """
     # For now, return the client with mock authentication headers
     # This will be improved when we implement proper auth testing
     mock_token = "mock_jwt_token_for_testing"
     async_client.headers.update({"Authorization": f"Bearer {mock_token}"})
-    
+
     # Mock user data
-    mock_user = {
-        "id": 1,
-        "username": "testuser",
-        "email": "test@example.com",
-        "is_superuser": False
-    }
-    
+    mock_user = {"id": 1, "username": "testuser", "email": "test@example.com", "is_superuser": False}
+
     yield async_client, mock_user
 
 
 @pytest.fixture
 def superuser_client(async_client):
-    """Create an authenticated HTTP client with a superuser."""
+    """
+    Create an authenticated HTTP client with a superuser.
+    """
     # Mock superuser authentication
     mock_token = "mock_superuser_jwt_token_for_testing"
     async_client.headers.update({"Authorization": f"Bearer {mock_token}"})
-    
+
     # Mock superuser data
-    mock_superuser = {
-        "id": 2,
-        "username": "superuser",
-        "email": "super@example.com",
-        "is_superuser": True
-    }
-    
+    mock_superuser = {"id": 2, "username": "superuser", "email": "super@example.com", "is_superuser": True}
+
     yield async_client, mock_superuser
 
 
 @pytest.fixture
 def mock_external_api(monkeypatch):
-    """Mock external API calls for testing."""
+    """
+    Mock external API calls for testing.
+    """
     from unittest.mock import AsyncMock
-    import httpx
-    
+
     mock_response = AsyncMock()
     mock_response.status_code = 200
     mock_response.json.return_value = {"status": "success", "data": "mocked"}
-    
+
     mock_client = AsyncMock()
     mock_client.get.return_value = mock_response
     mock_client.put.return_value = mock_response
     mock_client.delete.return_value = mock_response
-    
+
     monkeypatch.setattr("httpx.AsyncClient", lambda **kwargs: mock_client)
-    
+
     return mock_client
 
 
 @pytest.fixture
 def mock_database_error(monkeypatch):
-    """Mock database errors for testing error scenarios."""
+    """
+    Mock database errors for testing error scenarios.
+    """
     from unittest.mock import AsyncMock
+
     from sqlalchemy.exc import SQLAlchemyError
-    
+
     def _mock_error(operation="execute"):
         mock_func = AsyncMock(side_effect=SQLAlchemyError("Database error"))
         monkeypatch.setattr(f"sqlalchemy.ext.asyncio.AsyncSession.{operation}", mock_func)
         return mock_func
-    
+
     return _mock_error
 
 
 @pytest.fixture
 def freeze_time():
-    """Fixture for freezing time in tests."""
+    """
+    Fixture for freezing time in tests.
+    """
+    from datetime import datetime
     from unittest.mock import patch
-    from datetime import datetime, timezone
-    
+
     def _freeze(frozen_time=None):
         if frozen_time is None:
-            frozen_time = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
-        
-        mock_datetime = patch('app.models.task.datetime')
-        mock_utils_datetime = patch('app.core.utils.datetime')
+            frozen_time = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
+
+        mock_datetime = patch("app.models.task.datetime")
+        mock_utils_datetime = patch("app.core.utils.datetime")
         return mock_datetime, mock_utils_datetime
-    
+
     return _freeze
 
 
 @pytest.fixture(autouse=True)
 def mock_jwt_validation(monkeypatch):
-    """Mock JWT validation to prevent token parsing errors in tests."""
-    from unittest.mock import Mock
-    from datetime import datetime, UTC, timedelta
+    """
+    Mock JWT validation to prevent token parsing errors in tests.
+    """
+    from datetime import UTC, datetime, timedelta
+
     import jose.jwt
-    
+
     # Store the original decode function
     original_decode = jose.jwt.decode
-    
+
     # Mock JWT decode to return a valid payload with token_type
     def mock_jwt_decode(token, *args, **kwargs):
         # Check if we should bypass mocking (when options={'verify_signature': False})
-        options = kwargs.get('options', {})
-        if options.get('verify_signature') is False:
+        options = kwargs.get("options", {})
+        if options.get("verify_signature") is False:
             # Use the original jwt.decode for test verification
             return original_decode(token, *args, **kwargs)
-        
+
         # Default mock payload for other cases
         return {
-            "sub": "testuser", 
+            "sub": "testuser",
             "exp": int((datetime.now(UTC) + timedelta(hours=1)).timestamp()),
-            "token_type": "access"
+            "token_type": "access",
         }
-    
+
     monkeypatch.setattr("jose.jwt.decode", mock_jwt_decode)
     monkeypatch.setattr("src.app.core.security.jwt.decode", mock_jwt_decode)
-    
+
     return mock_jwt_decode
