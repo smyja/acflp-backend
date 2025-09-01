@@ -103,8 +103,7 @@ class FirstUserSettings(BaseSettings):
     ADMIN_PASSWORD: str = config("ADMIN_PASSWORD", default="")
 
 
-class TestSettings(BaseSettings):
-    ...
+class TestSettings(BaseSettings): ...
 
 
 class RedisCacheSettings(BaseSettings):
