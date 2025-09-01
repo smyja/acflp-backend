@@ -59,6 +59,7 @@ dev = [
     "fastapi-sso>=0.15.0",
     "bandit>=1.7.5",
     "safety>=3.0.0",
+    "psycopg[binary]>=3.2.0",
 ]
 
 [build-system]
