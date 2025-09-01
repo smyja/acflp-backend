@@ -2,19 +2,12 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.gitignore'
-      - 'LICENSE.md'
+    branches:
+      - '**'
   pull_request:
-    branches: [ main ]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.gitignore'
-      - 'LICENSE.md'
+    branches:
+      - '**'
+  workflow_dispatch: {}
 
 env:
   PYTHON_VERSION: '3.11'
