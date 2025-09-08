@@ -44,9 +44,7 @@ class TestBackgroundTasks:
             result = await create_task(message)
 
             assert result == {"id": "test_job_id_123"}
-            mock_queue.pool.enqueue_job.assert_called_once_with(
-                "sample_background_task", message
-            )
+            mock_queue.pool.enqueue_job.assert_called_once_with("sample_background_task", message)
 
     @pytest.mark.asyncio
     async def test_create_background_task_queue_unavailable(self):
@@ -138,9 +136,7 @@ class TestGetNextTask:
     """Test get next task endpoint."""
 
     @pytest.mark.asyncio
-    async def test_get_next_task_success(
-        self, mock_db, current_user_dict, sample_task_read
-    ):
+    async def test_get_next_task_success(self, mock_db, current_user_dict, sample_task_read):
         """Test successful next task retrieval."""
         request = Mock(spec=Request)
 
@@ -170,13 +166,9 @@ class TestGetNextTask:
 
         with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             # User has task in progress
-            mock_crud.get_multi = AsyncMock(
-                return_value={"data": [{"id": 1, "status": "in_progress"}]}
-            )
+            mock_crud.get_multi = AsyncMock(return_value={"data": [{"id": 1, "status": "in_progress"}]})
 
-            with pytest.raises(
-                ForbiddenException, match="You already have a task in progress"
-            ):
+            with pytest.raises(ForbiddenException, match="You already have a task in progress"):
                 await get_next_task(request, current_user_dict, mock_db)
 
     @pytest.mark.asyncio
@@ -200,9 +192,7 @@ class TestCreateTaskAPI:
     """Test task creation API endpoint."""
 
     @pytest.mark.asyncio
-    async def test_create_task_success(
-        self, mock_db, current_user_dict, sample_task_data, sample_task_read
-    ):
+    async def test_create_task_success(self, mock_db, current_user_dict, sample_task_data, sample_task_read):
         """Test successful task creation."""
         request = Mock(spec=Request)
         task_create = TaskCreate(**sample_task_data)
@@ -211,18 +201,14 @@ class TestCreateTaskAPI:
             mock_crud.create = AsyncMock(return_value=Mock(id=1))
             mock_crud.get = AsyncMock(return_value=sample_task_read)
 
-            result = await create_task_api(
-                request, task_create, current_user_dict, mock_db
-            )
+            result = await create_task_api(request, task_create, current_user_dict, mock_db)
 
             assert result == sample_task_read
             mock_crud.create.assert_called_once()
             mock_crud.get.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_create_task_not_found_after_creation(
-        self, mock_db, current_user_dict, sample_task_data
-    ):
+    async def test_create_task_not_found_after_creation(self, mock_db, current_user_dict, sample_task_data):
         """Test task creation when created task is not found."""
         request = Mock(spec=Request)
         task_create = TaskCreate(**sample_task_data)
@@ -310,9 +296,7 @@ class TestGetTaskAPI:
     """Test get single task API endpoint."""
 
     @pytest.mark.asyncio
-    async def test_get_task_success_owner(
-        self, mock_db, current_user_dict, sample_task_read
-    ):
+    async def test_get_task_success_owner(self, mock_db, current_user_dict, sample_task_read):
         """Test successful task retrieval by owner."""
         request = Mock(spec=Request)
         task_id = 1
@@ -321,16 +305,12 @@ class TestGetTaskAPI:
         with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get = AsyncMock(return_value=sample_task_read)
 
-            result = await get_task_api(
-                request, id=task_id, current_user=current_user_dict, db=mock_db
-            )
+            result = await get_task_api(request, id=task_id, current_user=current_user_dict, db=mock_db)
 
             assert result == sample_task_read
 
     @pytest.mark.asyncio
-    async def test_get_task_success_superuser(
-        self, mock_db, superuser_dict, sample_task_read
-    ):
+    async def test_get_task_success_superuser(self, mock_db, superuser_dict, sample_task_read):
         """Test successful task retrieval by superuser."""
         request = Mock(spec=Request)
         task_id = 1
@@ -339,16 +319,12 @@ class TestGetTaskAPI:
         with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
             mock_crud.get = AsyncMock(return_value=sample_task_read)
 
-            result = await get_task_api(
-                request, id=task_id, current_user=superuser_dict, db=mock_db
-            )
+            result = await get_task_api(request, id=task_id, current_user=superuser_dict, db=mock_db)
 
             assert result == sample_task_read
 
     @pytest.mark.asyncio
-    async def test_get_task_forbidden(
-        self, mock_db, current_user_dict, sample_task_read
-    ):
+    async def test_get_task_forbidden(self, mock_db, current_user_dict, sample_task_read):
         """Test task retrieval forbidden for non-owner."""
         request = Mock(spec=Request)
         task_id = 1
@@ -359,9 +335,7 @@ class TestGetTaskAPI:
             mock_crud.get = AsyncMock(return_value=sample_task_read)
 
             with pytest.raises(ForbiddenException):
-                await get_task_api(
-                    request, id=task_id, current_user=current_user_dict, db=mock_db
-                )
+                await get_task_api(request, id=task_id, current_user=current_user_dict, db=mock_db)
 
     @pytest.mark.asyncio
     async def test_get_task_not_found(self, mock_db, current_user_dict):
@@ -373,18 +347,14 @@ class TestGetTaskAPI:
             mock_crud.get = AsyncMock(return_value=None)
 
             with pytest.raises(NotFoundException, match="Task not found"):
-                await get_task_api(
-                    request, id=task_id, current_user=current_user_dict, db=mock_db
-                )
+                await get_task_api(request, id=task_id, current_user=current_user_dict, db=mock_db)
 
 
 class TestUpdateTask:
     """Test task update endpoint."""
 
     @pytest.mark.asyncio
-    async def test_update_task_success(
-        self, mock_db, current_user_dict, sample_task_read
-    ):
+    async def test_update_task_success(self, mock_db, current_user_dict, sample_task_read):
         """Test successful task update."""
         request = Mock(spec=Request)
         task_id = 1
@@ -399,9 +369,7 @@ class TestUpdateTask:
             mock_crud.get = AsyncMock(return_value=mock_task)
             mock_crud.update = AsyncMock(return_value=sample_task_read)
 
-            result = await update_task(
-                request, task_id, task_update, current_user_dict, mock_db
-            )
+            result = await update_task(request, task_id, task_update, current_user_dict, mock_db)
 
             assert result == sample_task_read
             mock_crud.update.assert_called_once()
@@ -422,18 +390,14 @@ class TestUpdateTask:
             mock_crud.get = AsyncMock(return_value=mock_task)
 
             with pytest.raises(ForbiddenException):
-                await update_task(
-                    request, task_id, task_update, current_user_dict, mock_db
-                )
+                await update_task(request, task_id, task_update, current_user_dict, mock_db)
 
 
 class TestCreateTranslation:
     """Test create translation endpoint."""
 
     @pytest.mark.asyncio
-    async def test_create_translation_success(
-        self, mock_db, current_user_dict, sample_task_read
-    ):
+    async def test_create_translation_success(self, mock_db, current_user_dict, sample_task_read):
         """Test successful translation creation."""
         request = Mock(spec=Request)
         task_id = 1
@@ -448,36 +412,26 @@ class TestCreateTranslation:
             )
             mock_crud.update = AsyncMock(return_value=None)
 
-            result = await create_translation(
-                request, task_id, translation, current_user_dict, mock_db
-            )
+            result = await create_translation(request, task_id, translation, current_user_dict, mock_db)
 
             assert result == sample_task_read
             mock_crud.update.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_create_translation_forbidden_wrong_assignee(
-        self, mock_db, current_user_dict
-    ):
+    async def test_create_translation_forbidden_wrong_assignee(self, mock_db, current_user_dict):
         """Test translation creation forbidden for wrong assignee."""
         request = Mock(spec=Request)
         task_id = 1
         translation = TaskTranslationCreate(translated_text="Translated content")
 
         with patch("src.app.api.v1.tasks_api.crud_tasks") as mock_crud:
-            mock_crud.get = AsyncMock(
-                return_value={"status": "in_progress", "assignee_id": 999}
-            )
+            mock_crud.get = AsyncMock(return_value={"status": "in_progress", "assignee_id": 999})
 
             with pytest.raises(ForbiddenException):
-                await create_translation(
-                    request, task_id, translation, current_user_dict, mock_db
-                )
+                await create_translation(request, task_id, translation, current_user_dict, mock_db)
 
     @pytest.mark.asyncio
-    async def test_create_translation_forbidden_wrong_status(
-        self, mock_db, current_user_dict
-    ):
+    async def test_create_translation_forbidden_wrong_status(self, mock_db, current_user_dict):
         """Test translation creation forbidden for wrong status."""
         request = Mock(spec=Request)
         task_id = 1
@@ -492,9 +446,7 @@ class TestCreateTranslation:
             )
 
             with pytest.raises(ForbiddenException):
-                await create_translation(
-                    request, task_id, translation, current_user_dict, mock_db
-                )
+                await create_translation(request, task_id, translation, current_user_dict, mock_db)
 
 
 class TestDeleteTask:

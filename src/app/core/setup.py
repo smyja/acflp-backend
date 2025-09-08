@@ -66,7 +66,12 @@ async def create_redis_queue_pool() -> None:
     for attempt in range(1, max_retries + 1):
         try:
             queue.pool = await create_pool(
-                RedisSettings(host=settings.REDIS_QUEUE_HOST, port=settings.REDIS_QUEUE_PORT)
+                RedisSettings(
+                    host=settings.REDIS_QUEUE_HOST,
+                    port=settings.REDIS_QUEUE_PORT,
+                    password=getattr(settings, "REDIS_QUEUE_PASSWORD", None),
+                    database=getattr(settings, "REDIS_QUEUE_DB", 0),
+                )
             )
             # successful connection if we got a pool
             logger.info("Connected to Redis queue at %s:%s", settings.REDIS_QUEUE_HOST, settings.REDIS_QUEUE_PORT)

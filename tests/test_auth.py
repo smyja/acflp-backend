@@ -35,9 +35,7 @@ class TestLogin:
             with patch("src.app.api.v1.login.create_access_token") as mock_access_token:
                 mock_access_token.return_value = "mock_access_token"
 
-                with patch(
-                    "src.app.api.v1.login.create_refresh_token"
-                ) as mock_refresh_token:
+                with patch("src.app.api.v1.login.create_refresh_token") as mock_refresh_token:
                     mock_refresh_token.return_value = "mock_refresh_token"
 
                     result = await login(response, credentials, mock_db)
@@ -62,9 +60,7 @@ class TestLogin:
         with patch("src.app.api.v1.login.authenticate_user") as mock_auth:
             mock_auth.return_value = None
 
-            with pytest.raises(
-                UnauthorizedException, match="Wrong username, email or password"
-            ):
+            with pytest.raises(UnauthorizedException, match="Wrong username, email or password"):
                 await login(response, credentials, mock_db)
 
     @pytest.mark.asyncio
@@ -99,9 +95,7 @@ class TestRefreshToken:
             with patch("src.app.api.v1.login.create_access_token") as mock_access_token:
                 mock_access_token.return_value = "new_access_token"
 
-                with patch(
-                    "src.app.api.v1.login.create_refresh_token"
-                ) as mock_refresh_token:
+                with patch("src.app.api.v1.login.create_refresh_token") as mock_refresh_token:
                     mock_refresh_token.return_value = "new_refresh_token"
 
                     result = await refresh_access_token(request, response, mock_db)
@@ -157,9 +151,7 @@ class TestLogout:
             assert result["message"] == "Logged out successfully"
 
             # Verify tokens were blacklisted
-            mock_blacklist.assert_called_once_with(
-                access_token=access_token, refresh_token=refresh_token, db=mock_db
-            )
+            mock_blacklist.assert_called_once_with(access_token=access_token, refresh_token=refresh_token, db=mock_db)
 
             # Verify refresh token cookie was deleted
             response.delete_cookie.assert_called_once_with(key="refresh_token")

@@ -188,9 +188,11 @@ class TestTokenVerification:
         """
         Test verification of valid access token.
         """
-        with patch("src.app.core.security.SECRET_KEY") as mock_secret, patch(
-            "src.app.core.security.crud_token_blacklist"
-        ) as mock_blacklist, patch("src.app.core.security.ALGORITHM", "HS256"):
+        with (
+            patch("src.app.core.security.SECRET_KEY") as mock_secret,
+            patch("src.app.core.security.crud_token_blacklist") as mock_blacklist,
+            patch("src.app.core.security.ALGORITHM", "HS256"),
+        ):
             mock_secret.get_secret_value.return_value = "test_secret_key"
             mock_blacklist.exists = AsyncMock(return_value=False)  # Token not blacklisted
 
@@ -244,9 +246,11 @@ class TestTokenVerification:
         """
         Test verification of blacklisted token.
         """
-        with patch("src.app.core.security.SECRET_KEY") as mock_secret, patch(
-            "src.app.core.security.crud_token_blacklist"
-        ) as mock_blacklist, patch("src.app.core.security.ALGORITHM", "HS256"):
+        with (
+            patch("src.app.core.security.SECRET_KEY") as mock_secret,
+            patch("src.app.core.security.crud_token_blacklist") as mock_blacklist,
+            patch("src.app.core.security.ALGORITHM", "HS256"),
+        ):
             mock_secret.get_secret_value.return_value = "test_secret_key"
             mock_blacklist.exists = AsyncMock(return_value=True)  # Token is blacklisted
 
@@ -289,9 +293,11 @@ class TestTokenVerification:
         """
         Test verification of token with wrong type.
         """
-        with patch("src.app.core.security.SECRET_KEY") as mock_secret, patch(
-            "src.app.core.security.crud_token_blacklist"
-        ) as mock_blacklist, patch("src.app.core.security.ALGORITHM", "HS256"):
+        with (
+            patch("src.app.core.security.SECRET_KEY") as mock_secret,
+            patch("src.app.core.security.crud_token_blacklist") as mock_blacklist,
+            patch("src.app.core.security.ALGORITHM", "HS256"),
+        ):
             mock_secret.get_secret_value.return_value = "test_secret_key"
             # Do not treat the token as blacklisted
             mock_blacklist.exists = AsyncMock(return_value=False)
@@ -339,9 +345,11 @@ class TestTokenVerification:
 @pytest.mark.asyncio
 @pytest.mark.parametrize("expected", [TokenType.REFRESH, "refresh", "REFRESH"])
 async def test_verify_token_refresh_expected_variants(expected, mock_db):
-    with patch("src.app.core.security.SECRET_KEY") as mock_secret, patch(
-        "src.app.core.security.crud_token_blacklist"
-    ) as mock_blacklist, patch("src.app.core.security.ALGORITHM", "HS256"):
+    with (
+        patch("src.app.core.security.SECRET_KEY") as mock_secret,
+        patch("src.app.core.security.crud_token_blacklist") as mock_blacklist,
+        patch("src.app.core.security.ALGORITHM", "HS256"),
+    ):
         mock_secret.get_secret_value.return_value = "test_secret_key"
         mock_blacklist.exists = AsyncMock(return_value=False)
         token = await create_refresh_token({"sub": "testuser"})
@@ -360,9 +368,10 @@ class TestTokenBlacklisting:
         """
         Test successful token blacklisting.
         """
-        with patch("src.app.core.security.SECRET_KEY") as mock_secret, patch(
-            "src.app.core.security.crud_token_blacklist"
-        ) as mock_blacklist:
+        with (
+            patch("src.app.core.security.SECRET_KEY") as mock_secret,
+            patch("src.app.core.security.crud_token_blacklist") as mock_blacklist,
+        ):
             mock_secret.get_secret_value.return_value = "test_secret_key"
             mock_blacklist.create = AsyncMock()
 
@@ -386,9 +395,10 @@ class TestTokenBlacklisting:
         """
         Test blacklisting token without expiration.
         """
-        with patch("src.app.core.security.SECRET_KEY") as mock_secret, patch(
-            "src.app.core.security.crud_token_blacklist"
-        ) as mock_blacklist:
+        with (
+            patch("src.app.core.security.SECRET_KEY") as mock_secret,
+            patch("src.app.core.security.crud_token_blacklist") as mock_blacklist,
+        ):
             mock_secret.get_secret_value.return_value = "test_secret_key"
             mock_blacklist.create = AsyncMock()
 
@@ -409,9 +419,10 @@ class TestTokenBlacklisting:
         """
         Test blacklisting multiple tokens.
         """
-        with patch("src.app.core.security.SECRET_KEY") as mock_secret, patch(
-            "src.app.core.security.crud_token_blacklist"
-        ) as mock_blacklist:
+        with (
+            patch("src.app.core.security.SECRET_KEY") as mock_secret,
+            patch("src.app.core.security.crud_token_blacklist") as mock_blacklist,
+        ):
             mock_secret.get_secret_value.return_value = "test_secret_key"
             mock_blacklist.create = AsyncMock()
 
@@ -520,9 +531,10 @@ class TestCurrentUserDependencies:
 
         mock_user = {"id": 1, "username": "testuser", "email": "test@example.com", "is_deleted": False}
 
-        with patch("src.app.api.dependencies.verify_token") as mock_verify, patch(
-            "src.app.api.dependencies.crud_users"
-        ) as mock_crud:
+        with (
+            patch("src.app.api.dependencies.verify_token") as mock_verify,
+            patch("src.app.api.dependencies.crud_users") as mock_crud,
+        ):
             mock_verify.return_value = mock_token_data
             mock_crud.get = AsyncMock(return_value=mock_user)
 
@@ -552,9 +564,10 @@ class TestCurrentUserDependencies:
         mock_token_data = Mock()
         mock_token_data.username_or_email = "nonexistent"
 
-        with patch("src.app.core.security.verify_token") as mock_verify, patch(
-            "src.app.core.security.crud_users"
-        ) as mock_crud:
+        with (
+            patch("src.app.core.security.verify_token") as mock_verify,
+            patch("src.app.core.security.crud_users") as mock_crud,
+        ):
             mock_verify.return_value = mock_token_data
             mock_crud.get.return_value = None
 

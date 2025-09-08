@@ -109,7 +109,14 @@ class TestSettings(BaseSettings): ...
 class RedisCacheSettings(BaseSettings):
     REDIS_CACHE_HOST: str = config("REDIS_CACHE_HOST", default="localhost")
     REDIS_CACHE_PORT: int = config("REDIS_CACHE_PORT", default=6379)
-    REDIS_CACHE_URL: str = f"redis://{REDIS_CACHE_HOST}:{REDIS_CACHE_PORT}"
+    # Optional password and DB index; if your Redis requires auth, prefer setting
+    # full URLs via env (e.g. REDIS_CACHE_URL=redis://:password@host:port/0)
+    REDIS_CACHE_PASSWORD: str | None = config("REDIS_CACHE_PASSWORD", default=None)
+    REDIS_CACHE_DB: int = config("REDIS_CACHE_DB", default=0)
+    REDIS_CACHE_URL: str = config(
+        "REDIS_CACHE_URL",
+        default=f"redis://{REDIS_CACHE_HOST}:{REDIS_CACHE_PORT}/{REDIS_CACHE_DB}",
+    )
 
 
 class ClientSideCacheSettings(BaseSettings):
@@ -119,12 +126,19 @@ class ClientSideCacheSettings(BaseSettings):
 class RedisQueueSettings(BaseSettings):
     REDIS_QUEUE_HOST: str = config("REDIS_QUEUE_HOST", default="localhost")
     REDIS_QUEUE_PORT: int = config("REDIS_QUEUE_PORT", default=6379)
+    REDIS_QUEUE_PASSWORD: str | None = config("REDIS_QUEUE_PASSWORD", default=None)
+    REDIS_QUEUE_DB: int = config("REDIS_QUEUE_DB", default=1)
 
 
 class RedisRateLimiterSettings(BaseSettings):
     REDIS_RATE_LIMIT_HOST: str = config("REDIS_RATE_LIMIT_HOST", default="localhost")
     REDIS_RATE_LIMIT_PORT: int = config("REDIS_RATE_LIMIT_PORT", default=6379)
-    REDIS_RATE_LIMIT_URL: str = f"redis://{REDIS_RATE_LIMIT_HOST}:{REDIS_RATE_LIMIT_PORT}"
+    REDIS_RATE_LIMIT_PASSWORD: str | None = config("REDIS_RATE_LIMIT_PASSWORD", default=None)
+    REDIS_RATE_LIMIT_DB: int = config("REDIS_RATE_LIMIT_DB", default=2)
+    REDIS_RATE_LIMIT_URL: str = config(
+        "REDIS_RATE_LIMIT_URL",
+        default=f"redis://{REDIS_RATE_LIMIT_HOST}:{REDIS_RATE_LIMIT_PORT}/{REDIS_RATE_LIMIT_DB}",
+    )
 
 
 class DefaultRateLimitSettings(BaseSettings):

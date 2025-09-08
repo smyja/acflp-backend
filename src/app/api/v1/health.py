@@ -3,7 +3,6 @@ from fastapi import APIRouter
 from ...core.config import settings
 from ...core.schemas import HealthCheck
 
-
 router = APIRouter(tags=["health"])
 
 
@@ -14,4 +13,3 @@ async def health() -> HealthCheck:
         version=settings.APP_VERSION or "",
         description=settings.APP_DESCRIPTION or "",
     )
-

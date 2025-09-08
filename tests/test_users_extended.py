@@ -27,9 +27,10 @@ class TestUserEndpointsEdgeCases:
             username="test_user-123", email="test@example.com", password="password123", name="Test User"
         )
 
-        with patch("src.app.api.v1.users.crud_users") as mock_crud_users, patch(
-            "src.app.api.v1.users.get_password_hash"
-        ) as mock_hash:
+        with (
+            patch("src.app.api.v1.users.crud_users") as mock_crud_users,
+            patch("src.app.api.v1.users.get_password_hash") as mock_hash,
+        ):
             mock_crud_users.exists.return_value = False
             mock_hash.return_value = "hashed_password"
 
@@ -57,9 +58,10 @@ class TestUserEndpointsEdgeCases:
             username="testuser", email="test@example.com", password="plaintext_password", name="Test User"
         )
 
-        with patch("src.app.api.v1.users.crud_users") as mock_crud_users, patch(
-            "src.app.api.v1.users.get_password_hash"
-        ) as mock_hash:
+        with (
+            patch("src.app.api.v1.users.crud_users") as mock_crud_users,
+            patch("src.app.api.v1.users.get_password_hash") as mock_hash,
+        ):
             mock_crud_users.exists.return_value = False
             mock_hash.return_value = "hashed_password_123"
 
@@ -92,9 +94,10 @@ class TestUserEndpointsEdgeCases:
         request = Mock(spec=Request)
         user_data = UserCreate(username="testuser", email="test@example.com", password="password123", name="Test User")
 
-        with patch("src.app.api.v1.users.crud_users") as mock_crud_users, patch(
-            "src.app.api.v1.users.get_password_hash"
-        ) as mock_hash:
+        with (
+            patch("src.app.api.v1.users.crud_users") as mock_crud_users,
+            patch("src.app.api.v1.users.get_password_hash") as mock_hash,
+        ):
             mock_crud_users.exists.return_value = False
             mock_hash.return_value = "hashed_password"
 
@@ -117,9 +120,10 @@ class TestUserEndpointsEdgeCases:
         request = Mock(spec=Request)
         user_data = UserCreate(username="testuser", email="test@example.com", password="password123", name="Test User")
 
-        with patch("src.app.api.v1.users.crud_users") as mock_crud_users, patch(
-            "src.app.api.v1.users.get_password_hash"
-        ) as mock_hash:
+        with (
+            patch("src.app.api.v1.users.crud_users") as mock_crud_users,
+            patch("src.app.api.v1.users.get_password_hash") as mock_hash,
+        ):
             mock_crud_users.exists.return_value = False
             mock_hash.return_value = "hashed_password"
 

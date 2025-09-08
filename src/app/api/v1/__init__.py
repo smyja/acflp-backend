@@ -1,12 +1,12 @@
 from fastapi import APIRouter
 
+from .health import router as health_router
 from .login import router as login_router
 from .logout import router as logout_router
 from .oauth import router as oauth_router
 from .tasks import router as tasks_router
 from .tasks_api import router as tasks_api_router
 from .users import router as users_router
-from .health import router as health_router
 
 router = APIRouter(prefix="/v1")
 router.include_router(login_router)

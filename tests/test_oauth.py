@@ -40,9 +40,11 @@ class TestCreateOAuthUser:
         """
         user_info = MockUserInfo(email="newuser@example.com", display_name="New User")
 
-        with patch("src.app.api.v1.oauth.crud_users") as mock_crud, patch(
-            "src.app.api.v1.oauth.get_password_hash"
-        ) as mock_hash, patch("src.app.api.v1.oauth.secrets.token_urlsafe") as mock_token:
+        with (
+            patch("src.app.api.v1.oauth.crud_users") as mock_crud,
+            patch("src.app.api.v1.oauth.get_password_hash") as mock_hash,
+            patch("src.app.api.v1.oauth.secrets.token_urlsafe") as mock_token,
+        ):
             mock_token.return_value = "secure_random_password"
             mock_hash.return_value = "hashed_password"
             mock_crud.get = AsyncMock(return_value=None)  # Username available
@@ -68,9 +70,11 @@ class TestCreateOAuthUser:
         """
         user_info = MockUserInfo(email="test@example.com", display_name="Test User")
 
-        with patch("src.app.api.v1.oauth.crud_users") as mock_crud, patch(
-            "src.app.api.v1.oauth.get_password_hash"
-        ) as mock_hash, patch("src.app.api.v1.oauth.secrets.token_urlsafe") as mock_token:
+        with (
+            patch("src.app.api.v1.oauth.crud_users") as mock_crud,
+            patch("src.app.api.v1.oauth.get_password_hash") as mock_hash,
+            patch("src.app.api.v1.oauth.secrets.token_urlsafe") as mock_token,
+        ):
             mock_token.return_value = "secure_random_password"
             mock_hash.return_value = "hashed_password"
 
@@ -94,9 +98,11 @@ class TestCreateOAuthUser:
         """
         user_info = MockUserInfo(email="a@example.com", display_name="A User")
 
-        with patch("src.app.api.v1.oauth.crud_users") as mock_crud, patch(
-            "src.app.api.v1.oauth.get_password_hash"
-        ) as mock_hash, patch("src.app.api.v1.oauth.secrets.token_urlsafe") as mock_token:
+        with (
+            patch("src.app.api.v1.oauth.crud_users") as mock_crud,
+            patch("src.app.api.v1.oauth.get_password_hash") as mock_hash,
+            patch("src.app.api.v1.oauth.secrets.token_urlsafe") as mock_token,
+        ):
             mock_token.return_value = "secure_random_password"
             mock_hash.return_value = "hashed_password"
             mock_crud.get = AsyncMock(return_value=None)
@@ -116,11 +122,12 @@ class TestCreateOAuthUser:
         """
         user_info = MockUserInfo(email="test@example.com", display_name="Test User")
 
-        with patch("src.app.api.v1.oauth.crud_users") as mock_crud, patch(
-            "src.app.api.v1.oauth.get_password_hash"
-        ) as mock_hash, patch("src.app.api.v1.oauth.secrets.token_urlsafe") as mock_token, patch(
-            "src.app.api.v1.oauth.secrets.randbelow"
-        ) as mock_randbelow:
+        with (
+            patch("src.app.api.v1.oauth.crud_users") as mock_crud,
+            patch("src.app.api.v1.oauth.get_password_hash") as mock_hash,
+            patch("src.app.api.v1.oauth.secrets.token_urlsafe") as mock_token,
+            patch("src.app.api.v1.oauth.secrets.randbelow") as mock_randbelow,
+        ):
             mock_token.return_value = "secure_random_password"
             mock_hash.return_value = "hashed_password"
             mock_randbelow.return_value = 123456
@@ -143,9 +150,11 @@ class TestCreateOAuthUser:
         """
         user_info = MockUserInfo(email="test@example.com", display_name="Test User")
 
-        with patch("src.app.api.v1.oauth.crud_users") as mock_crud, patch(
-            "src.app.api.v1.oauth.get_password_hash"
-        ) as mock_hash, patch("src.app.api.v1.oauth.secrets.token_urlsafe") as mock_token:
+        with (
+            patch("src.app.api.v1.oauth.crud_users") as mock_crud,
+            patch("src.app.api.v1.oauth.get_password_hash") as mock_hash,
+            patch("src.app.api.v1.oauth.secrets.token_urlsafe") as mock_token,
+        ):
             mock_token.return_value = "secure_random_password"
             mock_hash.return_value = "hashed_password"
             mock_crud.get = AsyncMock(return_value=None)
@@ -196,11 +205,12 @@ class TestGoogleCallback:
         existing_user = Mock()
         existing_user.username = "existing_user"
 
-        with patch("src.app.api.v1.oauth.google_sso") as mock_sso, patch(
-            "src.app.api.v1.oauth.crud_users"
-        ) as mock_crud, patch("src.app.api.v1.oauth.create_access_token") as mock_access_token, patch(
-            "src.app.api.v1.oauth.create_refresh_token"
-        ) as mock_refresh_token:
+        with (
+            patch("src.app.api.v1.oauth.google_sso") as mock_sso,
+            patch("src.app.api.v1.oauth.crud_users") as mock_crud,
+            patch("src.app.api.v1.oauth.create_access_token") as mock_access_token,
+            patch("src.app.api.v1.oauth.create_refresh_token") as mock_refresh_token,
+        ):
             mock_sso.verify_and_process = AsyncMock(return_value=user_info)
             mock_crud.get = AsyncMock(return_value=existing_user)
             mock_access_token.return_value = "access_token_123"
@@ -232,11 +242,13 @@ class TestGoogleCallback:
         new_user = Mock()
         new_user.username = "newuser"
 
-        with patch("src.app.api.v1.oauth.google_sso") as mock_sso, patch(
-            "src.app.api.v1.oauth.crud_users"
-        ) as mock_crud, patch("src.app.api.v1.oauth._create_oauth_user") as mock_create_user, patch(
-            "src.app.api.v1.oauth.create_access_token"
-        ) as mock_access_token, patch("src.app.api.v1.oauth.create_refresh_token") as mock_refresh_token:
+        with (
+            patch("src.app.api.v1.oauth.google_sso") as mock_sso,
+            patch("src.app.api.v1.oauth.crud_users") as mock_crud,
+            patch("src.app.api.v1.oauth._create_oauth_user") as mock_create_user,
+            patch("src.app.api.v1.oauth.create_access_token") as mock_access_token,
+            patch("src.app.api.v1.oauth.create_refresh_token") as mock_refresh_token,
+        ):
             mock_sso.verify_and_process = AsyncMock(return_value=user_info)
             mock_crud.get = AsyncMock(side_effect=[None, new_user])  # First call: no existing user, second: new user
             mock_create_user.return_value = None
@@ -297,9 +309,11 @@ class TestGoogleCallback:
         response = Mock(spec=Response)
         user_info = MockUserInfo(email="newuser@example.com", display_name="New User")
 
-        with patch("src.app.api.v1.oauth.google_sso") as mock_sso, patch(
-            "src.app.api.v1.oauth.crud_users"
-        ) as mock_crud, patch("src.app.api.v1.oauth._create_oauth_user") as mock_create_user:
+        with (
+            patch("src.app.api.v1.oauth.google_sso") as mock_sso,
+            patch("src.app.api.v1.oauth.crud_users") as mock_crud,
+            patch("src.app.api.v1.oauth._create_oauth_user") as mock_create_user,
+        ):
             mock_sso.verify_and_process = AsyncMock(return_value=user_info)
             mock_crud.get = AsyncMock(side_effect=[None, None])  # No existing user, creation failed
             mock_create_user = AsyncMock(return_value=None)
@@ -343,9 +357,10 @@ class TestGetGoogleUserInfo:
         request = Mock(spec=Request)
         user_info = MockUserInfo(email="test@example.com", display_name="Test User")
 
-        with patch("src.app.api.v1.oauth.settings") as mock_settings, patch(
-            "src.app.api.v1.oauth.google_sso"
-        ) as mock_sso:
+        with (
+            patch("src.app.api.v1.oauth.settings") as mock_settings,
+            patch("src.app.api.v1.oauth.google_sso") as mock_sso,
+        ):
             mock_settings.ENVIRONMENT.value = "local"
             mock_sso.verify_and_process = AsyncMock(return_value=user_info)
 
@@ -379,9 +394,10 @@ class TestGetGoogleUserInfo:
         """
         request = Mock(spec=Request)
 
-        with patch("src.app.api.v1.oauth.settings") as mock_settings, patch(
-            "src.app.api.v1.oauth.google_sso"
-        ) as mock_sso:
+        with (
+            patch("src.app.api.v1.oauth.settings") as mock_settings,
+            patch("src.app.api.v1.oauth.google_sso") as mock_sso,
+        ):
             mock_settings.ENVIRONMENT.value = "local"
             mock_sso.verify_and_process = AsyncMock(return_value=None)
 
@@ -398,9 +414,10 @@ class TestGetGoogleUserInfo:
         """
         request = Mock(spec=Request)
 
-        with patch("src.app.api.v1.oauth.settings") as mock_settings, patch(
-            "src.app.api.v1.oauth.google_sso"
-        ) as mock_sso:
+        with (
+            patch("src.app.api.v1.oauth.settings") as mock_settings,
+            patch("src.app.api.v1.oauth.google_sso") as mock_sso,
+        ):
             mock_settings.ENVIRONMENT.value = "local"
             mock_sso.verify_and_process = AsyncMock(side_effect=Exception("OAuth error"))
 
