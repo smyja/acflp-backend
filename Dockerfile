@@ -126,7 +126,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONHASHSEED=random \
     PATH="/opt/venv/bin:$PATH" \
-    ENVIRONMENT=production
+    ENVIRONMENT=production \
+    PYTHONPATH="/app/src:$PYTHONPATH"
 
 # Install only runtime dependencies
 RUN apt-get update \
