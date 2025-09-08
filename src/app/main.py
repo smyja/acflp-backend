@@ -1,7 +1,9 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import FastAPI
+from sqlalchemy.exc import IntegrityError
 
 from .admin.initialize import create_admin_interface
 from .api import router
@@ -22,7 +24,21 @@ async def lifespan_with_admin(app: FastAPI) -> AsyncGenerator[None, None]:
         # Initialize admin interface if it exists
         if admin:
             # Initialize admin database and setup
-            await admin.initialize()
+            try:
+                await admin.initialize()
+            except IntegrityError as e:
+                # If initial admin already exists, ignore and continue startup
+                msg = str(e).lower()
+                if ("unique" in msg or "duplicate key" in msg) and "admin_user" in msg:
+                    logging.getLogger(__name__).info("Admin user already exists; continuing startup")
+                else:
+                    raise
+            except Exception as e:  # Fallback: ignore duplicate admin creation across drivers
+                msg = str(e).lower()
+                if ("unique" in msg or "duplicate" in msg) and "admin_user" in msg:
+                    logging.getLogger(__name__).info("Admin user already exists; continuing startup")
+                else:
+                    raise
 
         yield
 
