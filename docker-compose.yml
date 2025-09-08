@@ -9,7 +9,7 @@ services:
     command: uvicorn src.app.main:app --host 0.0.0.0 --port 8000 --reload
     # command: gunicorn src.app.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000
     env_file:
-      - ./src/.env
+      - ./src/.env.local
     # -------- replace with comment if you are using nginx --------
     ports:
       - "8000:8000"
@@ -31,7 +31,7 @@ services:
       context: .
       dockerfile: Dockerfile.test
     env_file:
-      - ./src/.env
+      - ./src/.env.local
     environment:
       - PYTHONPATH=/code/src
     depends_on:
@@ -51,7 +51,7 @@ services:
       dockerfile: Dockerfile
     command: arq src.app.core.worker.settings.WorkerSettings
     env_file:
-      - ./src/.env
+      - ./src/.env.local
     depends_on:
       db:
         condition: service_healthy
@@ -64,7 +64,7 @@ services:
   db:
     image: postgres:13-alpine
     env_file:
-      - ./src/.env
+      - ./src/.env.local
     volumes:
       - postgres-data:/var/lib/postgresql/data
     # -------- replace with comment to run migrations with docker --------

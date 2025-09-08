@@ -1,13 +1,17 @@
 from enum import Enum
 import os
+from pathlib import Path
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings
 from starlette.config import Config
 
 current_file_dir = os.path.dirname(os.path.realpath(__file__))
-env_path = os.path.join(current_file_dir, "..", "..", ".env")
-config = Config(env_path)
+base_dir = Path(current_file_dir).resolve().parents[2]
+# Prefer .env, then .env.local; pass None if not found to avoid warnings in production
+env_candidates = [base_dir / ".env", base_dir / ".env.local"]
+env_file = next((str(p) for p in env_candidates if p.exists()), None)
+config = Config(env_file)
 
 
 class AppSettings(BaseSettings):
@@ -81,13 +85,16 @@ class PostgresSettings(DatabaseSettings):
 
     @property
     def postgres_uri(self) -> str:
-        # Use POSTGRES_URL if provided, otherwise construct from components
+        # Prefer a full URL if provided. Support both POSTGRES_URL and DATABASE_URL.
         postgres_url = config("POSTGRES_URL", default=None)
-        if postgres_url:
+        database_url = config("DATABASE_URL", default=None)
+        url = postgres_url or database_url
+        if url:
             # Extract the URI part after the protocol
-            if "://" in postgres_url:
-                return postgres_url.split("://", 1)[1]
-            return postgres_url
+            if "://" in url:
+                return url.split("://", 1)[1]
+            return url
+        # Otherwise construct from components
         return (
             f"{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@"
             f"{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
