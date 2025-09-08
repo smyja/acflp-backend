@@ -38,7 +38,7 @@ def create_admin_interface() -> CRUDAdmin | None:
         max_sessions_per_user=settings.CRUD_ADMIN_MAX_SESSIONS,
         session_timeout_minutes=settings.CRUD_ADMIN_SESSION_TIMEOUT,
         secure_cookies=settings.SESSION_SECURE_COOKIES,
-        enforce_https=settings.ENVIRONMENT == EnvironmentOption.PRODUCTION,
+        enforce_https=settings.CRUD_ADMIN_ENFORCE_HTTPS,
         track_events=settings.CRUD_ADMIN_TRACK_EVENTS,
         track_sessions_in_db=settings.CRUD_ADMIN_TRACK_SESSIONS,
         initial_admin={

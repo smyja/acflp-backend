@@ -162,6 +162,11 @@ class CRUDAdminSettings(BaseSettings):
     CRUD_ADMIN_MAX_SESSIONS: int = config("CRUD_ADMIN_MAX_SESSIONS", default=10)
     CRUD_ADMIN_SESSION_TIMEOUT: int = config("CRUD_ADMIN_SESSION_TIMEOUT", default=1440)
     SESSION_SECURE_COOKIES: bool = config("SESSION_SECURE_COOKIES", default=True)
+    # When true, admin will redirect HTTP to HTTPS. If your app runs behind
+    # a reverse proxy that already terminates TLS (e.g., CapRover/Nginx), you
+    # may need to set this to false to avoid 301 loops if proxy headers
+    # aren't propagated.
+    CRUD_ADMIN_ENFORCE_HTTPS: bool = config("CRUD_ADMIN_ENFORCE_HTTPS", default=True)
 
     CRUD_ADMIN_TRACK_EVENTS: bool = config("CRUD_ADMIN_TRACK_EVENTS", default=True)
     CRUD_ADMIN_TRACK_SESSIONS: bool = config("CRUD_ADMIN_TRACK_SESSIONS", default=True)
