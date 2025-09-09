@@ -91,31 +91,6 @@ jobs:
     name: Test Suite
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: web_test
-          POSTGRES_USER: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
     strategy:
       matrix:
         python-version: ['3.11']
@@ -138,13 +113,10 @@ jobs:
         uv venv
         uv pip install -e ".[dev]"
 
-    - name: Install redis-tools
-      run: sudo apt-get update && sudo apt-get install -y redis-tools
-
-    - name: Wait for services
+    - name: Verify Docker available (for Testcontainers)
       run: |
-        timeout 30 bash -c 'until pg_isready -h localhost -p 5432; do sleep 1; done'
-        timeout 30 bash -c 'until redis-cli -h localhost -p 6379 ping; do sleep 1; done'
+        docker --version
+        docker info
 
     - name: Run tests with coverage
       run: |
@@ -159,15 +131,8 @@ jobs:
       env:
         ENVIRONMENT: local
         SECRET_KEY: test-secret-key-for-testing-only
-        POSTGRES_URL: postgresql://postgres:postgres@localhost:5432/web_test
-        POSTGRES_USER: postgres
-        POSTGRES_PASSWORD: postgres
-        POSTGRES_SERVER: localhost
-        POSTGRES_PORT: 5432
-        POSTGRES_DB: web_test
-        REDIS_CACHE_URL: redis://localhost:6379/0
-        REDIS_QUEUE_URL: redis://localhost:6379/1
-        REDIS_RATE_LIMIT_URL: redis://localhost:6379/2
+        # Optional: improve stability when running nested containers
+        TESTCONTAINERS_RYUK_DISABLED: 'false'
 
 
     - name: Upload test results
