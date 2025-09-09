@@ -17,6 +17,7 @@ from src.app.core.security import (
     create_refresh_token,
     get_password_hash,
     verify_password,
+    blacklist_token,
 )
 
 
@@ -99,3 +100,30 @@ class TestTokenCreation:
         monkeypatch.setattr("src.app.core.security.SECRET_KEY", Secret())
         token = await create_access_token({})
         assert isinstance(token, str) and token
+
+
+class TestBlacklistUnit:
+    @pytest.mark.asyncio
+    async def test_blacklist_token_ignores_without_exp(self, monkeypatch):
+        # Build a token without exp and ensure no DB write is attempted
+        class Secret:
+            def get_secret_value(self):
+                return "secret"
+
+        # Patch module attributes directly
+        import src.app.core.security as sec
+        monkeypatch.setattr(sec, "SECRET_KEY", Secret())
+
+        created = {"count": 0}
+
+        async def fake_create(db, object):  # noqa: ANN001
+            created["count"] += 1
+
+        # Swap out the CRUD object with a stub exposing .create
+        monkeypatch.setattr(sec, "crud_token_blacklist", type("Stub", (), {"create": fake_create}))
+
+        # Create an access token then strip the signature (safe for get_unverified_claims)
+        token = await create_access_token({"sub": "user"})
+        token_no_sig = token.rsplit(".", 1)[0]
+        await blacklist_token(token_no_sig, db=None)
+        assert created["count"] == 0

@@ -147,9 +147,10 @@ async def test_app_and_db_pg(pg_container):
     from src.app.core.db.database import Base
     from src.app.core.setup import create_application
 
-    # Convert DSN to async driver URL
+    # Convert DSN to async driver URL (handle both postgresql:// and postgresql+psycopg2://)
+    import re
     sync_url: str = pg_container.get_connection_url()
-    async_url = sync_url.replace("postgresql://", "postgresql+asyncpg://")
+    async_url = re.sub(r"^postgresql(\+psycopg2)?://", "postgresql+asyncpg://", sync_url)
 
     # Create engine & tables
     engine = create_async_engine(async_url, future=True)

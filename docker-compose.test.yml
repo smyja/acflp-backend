@@ -84,6 +84,8 @@ services:
       context: .
       dockerfile: Dockerfile
       target: test
+    # Run as root so testcontainers can access the Docker socket
+    user: "root"
     environment:
       - ENVIRONMENT=testing
       - SECRET_KEY=test-secret-key-for-testing-only
@@ -103,6 +105,8 @@ services:
       - REDIS_RATE_LIMIT_PORT=6379
       - REDIS_RATE_LIMIT_URL=redis://redis:6379/2
       - PYTHONPATH=/app/src
+      # Ensure Docker client points to the mounted socket
+      - DOCKER_HOST=unix:///var/run/docker.sock
     depends_on:
       db:
         condition: service_healthy
