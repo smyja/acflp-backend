@@ -162,7 +162,8 @@ async def get_task(
     current_user: Annotated[dict, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(async_get_db)],
 ) -> TaskRead:
-    db_task = await crud_tasks.get(db=db, id=id, schema_to_select=TaskRead)
+    # Exclude soft-deleted tasks from reads
+    db_task = await crud_tasks.get(db=db, id=id, is_deleted=False, schema_to_select=TaskRead)
     if db_task is None:
         raise NotFoundException("Task not found")
 
