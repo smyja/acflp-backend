@@ -33,10 +33,15 @@ async def lifespan_with_admin(app: FastAPI) -> AsyncGenerator[None, None]:
                     logging.getLogger(__name__).info("Admin user already exists; continuing startup")
                 else:
                     raise
-            except Exception as e:  # Fallback: ignore duplicate admin creation across drivers
+            except Exception as e:  # Fallbacks for concurrency and cross-driver differences
                 msg = str(e).lower()
+                # 1) Ignore duplicate admin user creation
                 if ("unique" in msg or "duplicate" in msg) and "admin_user" in msg:
                     logging.getLogger(__name__).info("Admin user already exists; continuing startup")
+                    
+                # 2) Ignore benign races where admin tables were created by another worker
+                elif "already exists" in msg and "admin_" in msg:
+                    logging.getLogger(__name__).info("Admin tables already exist; continuing startup")
                 else:
                     raise
 
