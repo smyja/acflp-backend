@@ -90,6 +90,8 @@ async def create_task(
     return cast(TaskRead, task_read)
 
 
+# Support both trailing and no-trailing slash for listing
+@router.get("", response_model=PaginatedListResponse[TaskRead])
 @router.get("/", response_model=PaginatedListResponse[TaskRead])
 async def get_my_tasks(
     request: Request,
@@ -193,7 +195,12 @@ async def update_task(
     if not current_user.get("is_superuser") and created_by_user_id != current_user["id"]:
         raise ForbiddenException("You don't have permission to update this task")
 
-    updated_task = await crud_tasks.update(db=db, object=values, id=id)
+    updated_task = await crud_tasks.update(db=db, object=values, id=id, schema_to_select=TaskRead)
+    if updated_task is None:
+        # Fallback: fetch after update in case the CRUD layer returns None
+        updated_task = await crud_tasks.get(db=db, id=id, schema_to_select=TaskRead)
+        if updated_task is None:
+            raise NotFoundException("Updated task not found")
     # TODO: Invalidate cache for get_task and get_my_tasks
     return cast(TaskRead, updated_task)
 

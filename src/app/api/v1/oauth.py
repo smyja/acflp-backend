@@ -97,7 +97,7 @@ async def google_login(request: Request) -> Any:
 @router.get("/google/callback")
 async def google_callback(
     request: Request,
-    response: Response,
+    response: Response,  # kept for backward compatibility with unit tests
     db: Annotated[AsyncSession, Depends(async_get_db)],
 ) -> RedirectResponse:
     """Handle Google OAuth callback.
@@ -138,9 +138,12 @@ async def google_callback(
 
         refresh_token = await create_refresh_token(data={"sub": username})
 
+        # Redirect to frontend with access token and set cookie on the redirect response
+        frontend_redirect_url = f"{settings.FRONTEND_URL}/auth/callback?token={access_token}"
+        redirect = RedirectResponse(url=frontend_redirect_url)
         # Set refresh token as HTTP-only cookie with security settings
         max_age = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
-        response.set_cookie(
+        redirect.set_cookie(
             key="refresh_token",
             value=refresh_token,
             httponly=True,
@@ -148,10 +151,6 @@ async def google_callback(
             samesite="lax",
             max_age=max_age,
         )
-
-        # Redirect to frontend with access token
-        frontend_redirect_url = f"{settings.FRONTEND_URL}/auth/callback?token={access_token}"
-        redirect = RedirectResponse(url=frontend_redirect_url)
         # Add attribute for tests that access ".url" directly
         redirect.url = frontend_redirect_url
         return redirect

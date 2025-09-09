@@ -179,6 +179,12 @@ async def test_app_and_db_pg(pg_container):
         yield app_local, SessionLocal
     finally:
         app_local.dependency_overrides.clear()
+        # Drop all tables to isolate tests sharing the same Postgres container
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(lambda sync_conn: Base.metadata.drop_all(sync_conn, checkfirst=True))
+        except Exception:
+            pass
         await engine.dispose()
 
 

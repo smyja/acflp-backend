@@ -100,19 +100,28 @@ async def patch_user(
     if db_user is None:
         raise NotFoundException("User not found")
 
-    db_user = cast(UserRead, db_user)
-    if db_user.username != current_user["username"]:
+    # Support both dict and pydantic/object return types
+    db_username = db_user.get("username") if isinstance(db_user, dict) else getattr(db_user, "username", None)
+    db_email = db_user.get("email") if isinstance(db_user, dict) else getattr(db_user, "email", None)
+    db_id = db_user.get("id") if isinstance(db_user, dict) else getattr(db_user, "id", None)
+
+    if db_username != current_user["username"]:
         raise ForbiddenException()
 
-    if values.username != db_user.username:
-        existing_username = await _await_maybe(crud_users.exists(db=db, username=values.username))
-        if existing_username:
-            raise DuplicateValueException("Username not available")
+    if values.username is not None and values.username != db_username:
+        # Use get to find conflicting record and ensure it's not the same user
+        existing = await _await_maybe(crud_users.get(db=db, username=values.username, is_deleted=False))
+        if existing is not None:
+            existing_id = existing.get("id") if isinstance(existing, dict) else getattr(existing, "id", None)
+            if existing_id is None or existing_id != db_id:
+                raise DuplicateValueException("Username not available")
 
-    if values.email != db_user.email:
-        existing_email = await _await_maybe(crud_users.exists(db=db, email=values.email))
-        if existing_email:
-            raise DuplicateValueException("Email is already registered")
+    if values.email is not None and values.email != db_email:
+        existing = await _await_maybe(crud_users.get(db=db, email=values.email, is_deleted=False))
+        if existing is not None:
+            existing_id = existing.get("id") if isinstance(existing, dict) else getattr(existing, "id", None)
+            if existing_id is None or existing_id != db_id:
+                raise DuplicateValueException("Email is already registered")
 
     await _await_maybe(crud_users.update(db=db, object=values, username=username))
     return {"message": "User updated"}

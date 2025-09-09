@@ -11,4 +11,5 @@ class TokenBlacklist(Base):
 
     id: Mapped[int] = mapped_column("id", autoincrement=True, nullable=False, unique=True, primary_key=True, init=False)
     token: Mapped[str] = mapped_column(String, unique=True, index=True)
-    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    # Store timezone-aware timestamps to match UTC datetimes we generate in code
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
