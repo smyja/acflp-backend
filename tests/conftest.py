@@ -107,7 +107,7 @@ def setup_cache_client():
     mock_client.pipeline.return_value.execute = AsyncMock(return_value=[])
 
     # Set the mock client globally for tests
-cache.client = mock_client
+    cache.client = mock_client
 
     yield
 
@@ -124,7 +124,7 @@ cache.client = mock_client
 def pg_container():
     """Start a Postgres container for integration tests.
 
-    Requires `testcontainers[postgresql]` to be installed and Docker running.
+    Requires `testcontainers` to be installed and Docker running.
     """
     try:
         from testcontainers.postgres import PostgresContainer  # type: ignore
