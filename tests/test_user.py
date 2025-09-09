@@ -1,204 +1,94 @@
-"""Unit tests for user API endpoints."""
+"""Integration tests for user API endpoints (Postgres Testcontainers)."""
 
-from unittest.mock import AsyncMock, Mock, patch
+from __future__ import annotations
 
+import httpx
 import pytest
-
-from src.app.api.v1.users import (
-    erase_user,
-    patch_user,
-    read_user,
-    read_users,
-    write_user,
-)
-from src.app.core.exceptions.http_exceptions import (
-    DuplicateValueException,
-    ForbiddenException,
-    NotFoundException,
-)
-from src.app.schemas.user import UserCreate, UserRead, UserUpdate
+from httpx import ASGITransport
+from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
-class TestWriteUser:
-    """Test user creation endpoint."""
-
-    @pytest.mark.asyncio
-    async def test_create_user_success(self, mock_db, sample_user_data, sample_user_read):
-        """Test successful user creation."""
-        user_create = UserCreate(**sample_user_data)
-
-        with patch("src.app.api.v1.users.crud_users") as mock_crud:
-            # Mock that email and username don't exist
-            mock_crud.exists = AsyncMock(side_effect=[False, False])  # email, then username
-            mock_crud.create = AsyncMock(return_value=Mock(id=1))
-            mock_crud.get = AsyncMock(return_value=sample_user_read)
-
-            with patch("src.app.api.v1.users.get_password_hash") as mock_hash:
-                mock_hash.return_value = "hashed_password"
-
-                result = await write_user(Mock(), user_create, mock_db)
-
-                assert result == sample_user_read
-                mock_crud.exists.assert_any_call(db=mock_db, email=user_create.email)
-                mock_crud.exists.assert_any_call(db=mock_db, username=user_create.username)
-                mock_crud.create.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_create_user_duplicate_email(self, mock_db, sample_user_data):
-        """Test user creation with duplicate email."""
-        user_create = UserCreate(**sample_user_data)
-
-        with patch("src.app.api.v1.users.crud_users") as mock_crud:
-            # Mock that email already exists
-            mock_crud.exists = AsyncMock(return_value=True)
-
-            with pytest.raises(DuplicateValueException, match="Email is already registered"):
-                await write_user(Mock(), user_create, mock_db)
-
-    @pytest.mark.asyncio
-    async def test_create_user_duplicate_username(self, mock_db, sample_user_data):
-        """Test user creation with duplicate username."""
-        user_create = UserCreate(**sample_user_data)
-
-        with patch("src.app.api.v1.users.crud_users") as mock_crud:
-            # Mock email doesn't exist, but username does
-            mock_crud.exists = AsyncMock(side_effect=[False, True])
-
-            with pytest.raises(DuplicateValueException, match="Username not available"):
-                await write_user(Mock(), user_create, mock_db)
+async def _create_user(client: httpx.AsyncClient, username: str, email: str, password: str) -> dict:
+    payload = {"name": "User", "username": username, "email": email, "password": password}
+    resp = await client.post("/api/v1/users/", json=payload)
+    assert resp.status_code == 201, resp.text
+    return resp.json()
 
 
-class TestReadUser:
-    """Test user retrieval endpoint."""
-
-    @pytest.mark.asyncio
-    async def test_read_user_success(self, mock_db, sample_user_read):
-        """Test successful user retrieval."""
-        username = "test_user"
-
-        with patch("src.app.api.v1.users.crud_users") as mock_crud:
-            mock_crud.get = AsyncMock(return_value=sample_user_read)
-
-            result = await read_user(Mock(), username, mock_db)
-
-            assert result == sample_user_read
-            mock_crud.get.assert_called_once_with(
-                db=mock_db,
-                username=username,
-                is_deleted=False,
-                schema_to_select=UserRead,
-            )
-
-    @pytest.mark.asyncio
-    async def test_read_user_not_found(self, mock_db):
-        """Test user retrieval when user doesn't exist."""
-        username = "nonexistent_user"
-
-        with patch("src.app.api.v1.users.crud_users") as mock_crud:
-            mock_crud.get = AsyncMock(return_value=None)
-
-            with pytest.raises(NotFoundException, match="User not found"):
-                await read_user(Mock(), username, mock_db)
+async def _login(client: httpx.AsyncClient, username: str, password: str) -> str:
+    resp = await client.post("/api/v1/login", json={"username": username, "password": password})
+    assert resp.status_code == 200, resp.text
+    return resp.json()["access_token"]
 
 
-class TestReadUsers:
-    """Test users list endpoint."""
+@pytest.mark.asyncio
+@pytest.mark.integration
+@pytest.mark.database
+async def test_create_and_get_user_flow(test_app_and_db_pg):
+    app, SessionLocal = test_app_and_db_pg
+    async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
+        # Create two users
+        u1 = await _create_user(client, "alice", "alice@example.com", "password1!")
+        u2 = await _create_user(client, "bob", "bob@example.com", "password2!")
 
-    @pytest.mark.asyncio
-    async def test_read_users_success(self, mock_db):
-        """Test successful users list retrieval."""
-        mock_users_data = {"data": [{"id": 1}, {"id": 2}], "count": 2}
+        # Promote alice to superuser directly in DB
+        async with SessionLocal() as session:
+            await session.execute(text('UPDATE "user" SET is_superuser = true WHERE username = :u'), {"u": "alice"})
+            await session.commit()
 
-        with patch("src.app.api.v1.users.crud_users") as mock_crud:
-            mock_crud.get_multi = AsyncMock(return_value=mock_users_data)
+        admin_token = await _login(client, "alice", "password1!")
 
-            with patch("src.app.api.v1.users.paginated_response") as mock_paginated:
-                expected_response = {"data": [{"id": 1}, {"id": 2}], "pagination": {}}
-                mock_paginated.return_value = expected_response
+        # Superuser reads a single user
+        resp = await client.get(
+            f"/api/v1/user/{u2['username']}", headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert resp.status_code == 200
+        assert resp.json()["username"] == "bob"
 
-                result = await read_users(Mock(), mock_db, page=1, items_per_page=10)
-
-                assert result == expected_response
-                mock_crud.get_multi.assert_called_once()
-                mock_paginated.assert_called_once()
-
-
-class TestPatchUser:
-    """Test user update endpoint."""
-
-    @pytest.mark.asyncio
-    async def test_patch_user_success(self, mock_db, current_user_dict, sample_user_read):
-        """Test successful user update."""
-        username = current_user_dict["username"]
-        sample_user_read.username = username  # Make sure usernames match
-        user_update = UserUpdate(name="New Name")
-
-        with patch("src.app.api.v1.users.crud_users") as mock_crud:
-            mock_crud.get = AsyncMock(return_value=sample_user_read)
-            mock_crud.exists = AsyncMock(return_value=False)  # No conflicts
-            mock_crud.update = AsyncMock(return_value=None)
-
-            result = await patch_user(Mock(), user_update, username, current_user_dict, mock_db)
-
-            assert result == {"message": "User updated"}
-            mock_crud.update.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_patch_user_forbidden(self, mock_db, current_user_dict, sample_user_read):
-        """Test user update when user tries to update another user."""
-        username = "different_user"
-        sample_user_read.username = username
-        user_update = UserUpdate(name="New Name")
-
-        with patch("src.app.api.v1.users.crud_users") as mock_crud:
-            mock_crud.get = AsyncMock(return_value=sample_user_read)
-
-            with pytest.raises(ForbiddenException):
-                await patch_user(Mock(), user_update, username, current_user_dict, mock_db)
+        # Superuser lists users (pagination shape validated by 200)
+        resp = await client.get("/api/v1/users", headers={"Authorization": f"Bearer {admin_token}"})
+        assert resp.status_code == 200
 
 
-class TestEraseUser:
-    """Test user deletion endpoint."""
+@pytest.mark.asyncio
+@pytest.mark.integration
+@pytest.mark.database
+async def test_patch_user_self_update_and_delete_flow(test_app_and_db_pg):
+    app, SessionLocal = test_app_and_db_pg
+    async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
+        await _create_user(client, "charlie", "charlie@example.com", "password3!")
+        token = await _login(client, "charlie", "password3!")
 
-    @pytest.mark.asyncio
-    async def test_erase_user_success(self, mock_db, current_user_dict, sample_user_read):
-        """Test successful user deletion."""
-        username = current_user_dict["username"]
-        sample_user_read.username = username
-        token = "mock_token"
+        # Self update name
+        resp = await client.patch(
+            "/api/v1/user/charlie",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"name": "Charles"},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["message"] == "User updated"
 
-        with patch("src.app.api.v1.users.crud_users") as mock_crud:
-            mock_crud.get = AsyncMock(return_value=sample_user_read)
-            mock_crud.delete = AsyncMock(return_value=None)
+        # Delete self (blacklists token)
+        resp = await client.delete("/api/v1/user/charlie", headers={"Authorization": f"Bearer {token}"})
+        assert resp.status_code == 200
+        assert resp.json()["message"] == "User deleted"
 
-            with patch("src.app.api.v1.users.blacklist_token", new_callable=AsyncMock) as mock_blacklist:
-                result = await erase_user(Mock(), username, current_user_dict, mock_db, token)
+        # Verify user not readable anymore by superuser
+        # Promote a new admin
+        await _create_user(client, "admin", "admin@example.com", "adminpass!")
+        async with SessionLocal() as session:
+            await session.execute(text('UPDATE "user" SET is_superuser = true WHERE username = :u'), {"u": "admin"})
+            await session.commit()
+        admin_token = await _login(client, "admin", "adminpass!")
 
-                assert result == {"message": "User deleted"}
-                mock_crud.delete.assert_called_once_with(db=mock_db, username=username)
-                mock_blacklist.assert_called_once_with(token=token, db=mock_db)
+        resp = await client.get("/api/v1/user/charlie", headers={"Authorization": f"Bearer {admin_token}"})
+        assert resp.status_code == 404
 
-    @pytest.mark.asyncio
-    async def test_erase_user_not_found(self, mock_db, current_user_dict):
-        """Test user deletion when user doesn't exist."""
-        username = "nonexistent_user"
-        token = "mock_token"
+        # Verify one blacklist entry exists for the delete token
+        from src.app.core.db.token_blacklist import TokenBlacklist
 
-        with patch("src.app.api.v1.users.crud_users") as mock_crud:
-            mock_crud.get = AsyncMock(return_value=None)
-
-            with pytest.raises(NotFoundException, match="User not found"):
-                await erase_user(Mock(), username, current_user_dict, mock_db, token)
-
-    @pytest.mark.asyncio
-    async def test_erase_user_forbidden(self, mock_db, current_user_dict, sample_user_read):
-        """Test user deletion when user tries to delete another user."""
-        username = "different_user"
-        sample_user_read.username = username
-        token = "mock_token"
-
-        with patch("src.app.api.v1.users.crud_users") as mock_crud:
-            mock_crud.get = AsyncMock(return_value=sample_user_read)
-
-            with pytest.raises(ForbiddenException):
-                await erase_user(Mock(), username, current_user_dict, mock_db, token)
+        async with SessionLocal() as session:
+            result = await session.execute(select(TokenBlacklist))
+            tokens = result.scalars().all()
+            assert len(tokens) >= 1

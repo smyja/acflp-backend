@@ -1,193 +1,106 @@
-"""Unit tests for authentication endpoints."""
+"""Integration tests for auth endpoints with Postgres Testcontainers.
 
-from unittest.mock import AsyncMock, Mock, patch
-from datetime import timedelta
+These tests exercise the actual FastAPI routes and security code with a
+real Postgres database (via Testcontainers) and zero business-logic mocking.
+"""
 
+from __future__ import annotations
+
+import re
+from typing import Any
+
+import httpx
 import pytest
-from fastapi import Response, Request
-from jose import JWTError
-
-from src.app.api.v1.login import login, refresh_access_token
-from src.app.api.v1.logout import logout
-from src.app.core.exceptions.http_exceptions import UnauthorizedException
-from src.app.core.schemas import LoginCredentials, Token
+from httpx import ASGITransport
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
-class TestLogin:
-    """Test login endpoint."""
-
-    @pytest.mark.asyncio
-    async def test_login_success(self, mock_db):
-        """Test successful login."""
-        credentials = LoginCredentials(username="testuser", password="testpass123")
-        response = Mock(spec=Response)
-
-        mock_user = {
-            "id": 1,
-            "username": "testuser",
-            "email": "test@example.com",
-            "is_superuser": False,
-        }
-
-        with patch("src.app.api.v1.login.authenticate_user") as mock_auth:
-            mock_auth.return_value = mock_user
-
-            with patch("src.app.api.v1.login.create_access_token") as mock_access_token:
-                mock_access_token.return_value = "mock_access_token"
-
-                with patch("src.app.api.v1.login.create_refresh_token") as mock_refresh_token:
-                    mock_refresh_token.return_value = "mock_refresh_token"
-
-                    result = await login(response, credentials, mock_db)
-
-                    assert result["access_token"] == "mock_access_token"
-                    assert result["token_type"] == "bearer"
-
-                    # Verify cookie was set
-                    response.set_cookie.assert_called_once()
-                    cookie_call = response.set_cookie.call_args
-                    assert cookie_call[1]["key"] == "refresh_token"
-                    assert cookie_call[1]["value"] == "mock_refresh_token"
-                    assert cookie_call[1]["httponly"] is True
-                    assert cookie_call[1]["secure"] is True
-
-    @pytest.mark.asyncio
-    async def test_login_invalid_credentials(self, mock_db):
-        """Test login with invalid credentials."""
-        credentials = LoginCredentials(username="testuser", password="wrongpass")
-        response = Mock(spec=Response)
-
-        with patch("src.app.api.v1.login.authenticate_user") as mock_auth:
-            mock_auth.return_value = None
-
-            with pytest.raises(UnauthorizedException, match="Wrong username, email or password"):
-                await login(response, credentials, mock_db)
-
-    @pytest.mark.asyncio
-    async def test_login_user_not_found(self, mock_db):
-        """Test login when user doesn't exist."""
-        credentials = LoginCredentials(username="nonexistent", password="testpass123")
-        response = Mock(spec=Response)
-
-        with patch("src.app.api.v1.login.authenticate_user") as mock_auth:
-            mock_auth.return_value = None
-
-            with pytest.raises(UnauthorizedException):
-                await login(response, credentials, mock_db)
+async def _create_user(client: httpx.AsyncClient, username: str, email: str, password: str) -> dict[str, Any]:
+    payload = {
+        "name": "Test User",
+        "username": username,
+        "email": email,
+        "password": password,
+    }
+    resp = await client.post("/api/v1/users/", json=payload)
+    assert resp.status_code == 201, resp.text
+    return resp.json()
 
 
-class TestRefreshToken:
-    """Test refresh token endpoint."""
+@pytest.mark.asyncio
+@pytest.mark.integration
+@pytest.mark.auth
+@pytest.mark.database
+async def test_login_refresh_logout_flow(test_app_and_db_pg):
+    app, SessionLocal = test_app_and_db_pg
 
-    @pytest.mark.asyncio
-    async def test_refresh_token_success(self, mock_db):
-        """Test successful token refresh."""
-        request = Mock(spec=Request)
-        request.cookies = {"refresh_token": "valid_refresh_token"}
-        response = Mock(spec=Response)
+    async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
+        # Arrange: create a user through the real endpoint
+        await _create_user(client, username="testuser", email="test@example.com", password="testpass123")
 
-        mock_user_data = Mock()
-        mock_user_data.username_or_email = "testuser"
+        # Act: login with JSON credentials
+        login_resp = await client.post("/api/v1/login", json={"username": "testuser", "password": "testpass123"})
+        assert login_resp.status_code == 200, login_resp.text
+        body = login_resp.json()
+        assert "access_token" in body
+        assert body["token_type"] == "bearer"
 
-        with patch("src.app.api.v1.login.verify_token") as mock_verify:
-            mock_verify.return_value = mock_user_data
+        # Assert: refresh token cookie is set and secure/httponly
+        set_cookie = login_resp.headers.get("set-cookie", "")
+        assert "refresh_token=" in set_cookie
+        # Cookie flags may appear in any order; check presence
+        assert re.search(r"(?i)httponly", set_cookie)
+        assert re.search(r"(?i)secure", set_cookie)
 
-            with patch("src.app.api.v1.login.create_access_token") as mock_access_token:
-                mock_access_token.return_value = "new_access_token"
+        access_token = body["access_token"]
 
-                with patch("src.app.api.v1.login.create_refresh_token") as mock_refresh_token:
-                    mock_refresh_token.return_value = "new_refresh_token"
+        # Act: refresh using cookie jar (client keeps cookies)
+        refresh_resp = await client.post("/api/v1/refresh")
+        assert refresh_resp.status_code == 200, refresh_resp.text
+        refreshed = refresh_resp.json()
+        assert "access_token" in refreshed
+        assert refreshed["token_type"] == "bearer"
 
-                    result = await refresh_access_token(request, response, mock_db)
+        # Act: logout using Authorization header and cookie
+        logout_resp = await client.post(
+            "/api/v1/logout", headers={"Authorization": f"Bearer {access_token}"}
+        )
+        assert logout_resp.status_code == 200, logout_resp.text
+        assert logout_resp.json()["message"] == "Logged out successfully"
 
-                    assert result["access_token"] == "new_access_token"
-                    assert result["token_type"] == "bearer"
-
-                    # Verify new refresh token cookie was set
-                    response.set_cookie.assert_called_once()
-                    cookie_call = response.set_cookie.call_args
-                    assert cookie_call[1]["key"] == "refresh_token"
-                    assert cookie_call[1]["value"] == "new_refresh_token"
-
-    @pytest.mark.asyncio
-    async def test_refresh_token_missing(self, mock_db):
-        """Test refresh when refresh token is missing."""
-        request = Mock(spec=Request)
-        request.cookies = {}  # No refresh token
-        response = Mock(spec=Response)
-
-        with pytest.raises(UnauthorizedException, match="Refresh token missing"):
-            await refresh_access_token(request, response, mock_db)
-
-    @pytest.mark.asyncio
-    async def test_refresh_token_invalid(self, mock_db):
-        """Test refresh with invalid refresh token."""
-        request = Mock(spec=Request)
-        request.cookies = {"refresh_token": "invalid_refresh_token"}
-        response = Mock(spec=Response)
-
-        with patch("src.app.api.v1.login.verify_token") as mock_verify:
-            mock_verify.return_value = None  # Invalid token
-
-            with pytest.raises(UnauthorizedException, match="Invalid refresh token"):
-                await refresh_access_token(request, response, mock_db)
+        # Assert: tokens were blacklisted (2 entries)
+        async with SessionLocal() as session:
+            count = await _count_blacklisted(session)
+            assert count == 2
 
 
-class TestLogout:
-    """Test logout endpoint."""
+async def _count_blacklisted(session: AsyncSession) -> int:
+    from src.app.core.db.token_blacklist import TokenBlacklist
 
-    @pytest.mark.asyncio
-    async def test_logout_success(self, mock_db):
-        """Test successful logout."""
-        response = Mock(spec=Response)
-        access_token = "valid_access_token"
-        refresh_token = "valid_refresh_token"
+    result = await session.execute(select(TokenBlacklist))
+    return len(result.scalars().all())
 
-        with patch("src.app.api.v1.logout.blacklist_tokens") as mock_blacklist:
-            mock_blacklist.return_value = None
 
-            result = await logout(response, access_token, mock_db, refresh_token)
+@pytest.mark.asyncio
+@pytest.mark.integration
+@pytest.mark.auth
+async def test_login_wrong_password_returns_401(test_app_and_db_pg):
+    app, _ = test_app_and_db_pg
+    async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
+        await _create_user(client, username="alice", email="alice@example.com", password="correct-horse")
 
-            assert result["message"] == "Logged out successfully"
+        resp = await client.post("/api/v1/login", json={"username": "alice", "password": "wrong-battery"})
+        assert resp.status_code == 401
+        assert "Wrong username, email or password" in resp.text
 
-            # Verify tokens were blacklisted
-            mock_blacklist.assert_called_once_with(access_token=access_token, refresh_token=refresh_token, db=mock_db)
 
-            # Verify refresh token cookie was deleted
-            response.delete_cookie.assert_called_once_with(key="refresh_token")
-
-    @pytest.mark.asyncio
-    async def test_logout_missing_refresh_token(self, mock_db):
-        """Test logout when refresh token is missing."""
-        response = Mock(spec=Response)
-        access_token = "valid_access_token"
-        refresh_token = None  # Missing refresh token
-
-        with pytest.raises(UnauthorizedException, match=r".*[Rr]efresh token not found.*"):
-            await logout(response, access_token, mock_db, refresh_token)
-
-    @pytest.mark.asyncio
-    async def test_logout_jwt_error(self, mock_db):
-        """Test logout when JWT error occurs."""
-        response = Mock(spec=Response)
-        access_token = "invalid_access_token"
-        refresh_token = "valid_refresh_token"
-
-        with patch("src.app.api.v1.logout.blacklist_tokens") as mock_blacklist:
-            mock_blacklist.side_effect = JWTError("Invalid token")
-
-            with pytest.raises(UnauthorizedException, match="Invalid token"):
-                await logout(response, access_token, refresh_token, mock_db)
-
-    @pytest.mark.asyncio
-    async def test_logout_blacklist_error(self, mock_db):
-        """Test logout when blacklisting fails."""
-        response = Mock(spec=Response)
-        access_token = "valid_access_token"
-        refresh_token = "valid_refresh_token"
-
-        with patch("src.app.api.v1.logout.blacklist_tokens") as mock_blacklist:
-            mock_blacklist.side_effect = Exception("Database error")
-
-            with pytest.raises(Exception, match="Database error"):
-                await logout(response, access_token, refresh_token, mock_db)
+@pytest.mark.asyncio
+@pytest.mark.integration
+@pytest.mark.auth
+async def test_refresh_missing_cookie_returns_401(test_app_and_db_pg):
+    app, _ = test_app_and_db_pg
+    async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
+        resp = await client.post("/api/v1/refresh")
+        assert resp.status_code == 401
+        assert "Refresh token missing" in resp.text

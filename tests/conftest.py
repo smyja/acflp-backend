@@ -107,12 +107,78 @@ def setup_cache_client():
     mock_client.pipeline.return_value.execute = AsyncMock(return_value=[])
 
     # Set the mock client globally for tests
-    cache.client = mock_client
+cache.client = mock_client
 
     yield
 
     # Clean up after tests
     cache.client = None
+
+
+# -------------------------
+# Postgres Testcontainers fixtures for integration tests
+# -------------------------
+
+
+@pytest.fixture(scope="session")
+def pg_container():
+    """Start a Postgres container for integration tests.
+
+    Requires `testcontainers[postgresql]` to be installed and Docker running.
+    """
+    try:
+        from testcontainers.postgres import PostgresContainer  # type: ignore
+    except Exception as e:  # pragma: no cover - optional dependency
+        pytest.skip(f"testcontainers not available: {e}")
+
+    with PostgresContainer("postgres:16-alpine") as postgres:
+        yield postgres
+
+
+@pytest.fixture()
+async def test_app_and_db_pg(pg_container):
+    """Create a FastAPI app bound to the Postgres testcontainer via dependency override."""
+    from contextlib import asynccontextmanager
+    from fastapi import FastAPI
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+    from src.app.api import router as api_router
+    from src.app.core.config import settings
+    from src.app.core.db.database import Base
+    from src.app.core.setup import create_application
+
+    # Convert DSN to async driver URL
+    sync_url: str = pg_container.get_connection_url()
+    async_url = sync_url.replace("postgresql://", "postgresql+asyncpg://")
+
+    # Create engine & tables
+    engine = create_async_engine(async_url, future=True)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    @asynccontextmanager
+    async def noop_lifespan(app: FastAPI):
+        yield
+
+    app_local = create_application(
+        router=api_router, settings=settings, create_tables_on_start=False, lifespan=noop_lifespan
+    )
+
+    from src.app.core.db.database import async_get_db as real_async_get_db
+
+    async def override_async_get_db():
+        async with SessionLocal() as session:
+            yield session
+
+    app_local.dependency_overrides[real_async_get_db] = override_async_get_db
+
+    try:
+        yield app_local, SessionLocal
+    finally:
+        app_local.dependency_overrides.clear()
+        await engine.dispose()
 
 
 @pytest.fixture(scope="function")
@@ -450,10 +516,13 @@ def freeze_time():
 
 
 @pytest.fixture(autouse=True)
-def mock_jwt_validation(monkeypatch):
+def mock_jwt_validation(monkeypatch, request):
     """
     Mock JWT validation to prevent token parsing errors in tests.
     """
+    # Do not mock for integration/e2e tests so tokens are verified end-to-end
+    if request.node.get_closest_marker("integration") or request.node.get_closest_marker("e2e"):
+        return
     from datetime import UTC, datetime, timedelta
 
     import jose.jwt
