@@ -40,9 +40,7 @@ async def test_create_and_get_user_flow(test_app_and_db_pg):
         admin_token = await _login(client, "alice", "password1!")
 
         # Superuser reads a single user
-        resp = await client.get(
-            f"/api/v1/user/{u2['username']}", headers={"Authorization": f"Bearer {admin_token}"}
-        )
+        resp = await client.get(f"/api/v1/user/{u2['username']}", headers={"Authorization": f"Bearer {admin_token}"})
         assert resp.status_code == 200
         assert resp.json()["username"] == "bob"
 

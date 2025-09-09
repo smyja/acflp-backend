@@ -1,6 +1,6 @@
 from crudadmin import CRUDAdmin
 
-from ..core.config import EnvironmentOption, settings
+from ..core.config import settings
 from ..core.db.database import async_get_db
 from .views import register_admin_views
 

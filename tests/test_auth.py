@@ -63,9 +63,7 @@ async def test_login_refresh_logout_flow(test_app_and_db_pg):
         assert refreshed["token_type"] == "bearer"
 
         # Act: logout using Authorization header and cookie
-        logout_resp = await client.post(
-            "/api/v1/logout", headers={"Authorization": f"Bearer {access_token}"}
-        )
+        logout_resp = await client.post("/api/v1/logout", headers={"Authorization": f"Bearer {access_token}"})
         assert logout_resp.status_code == 200, logout_resp.text
         assert logout_resp.json()["message"] == "Logged out successfully"
 

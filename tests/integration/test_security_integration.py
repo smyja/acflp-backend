@@ -55,4 +55,3 @@ async def test_blacklist_flow_end_to_end(test_app_and_db_pg):
         await blacklist_token(token, session)
         data = await verify_token(token, TokenType.ACCESS, session)
         assert data is None
-

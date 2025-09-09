@@ -62,6 +62,7 @@ async def test_google_login_redirect(test_app_and_db_pg, monkeypatch):
 async def test_google_callback_creates_user_and_sets_tokens(test_app_and_db_pg, monkeypatch):
     app, _ = test_app_and_db_pg
     from src.app.api.v1 import oauth as oauth_mod
+
     monkeypatch.setattr(oauth_mod, "google_sso", _dummy_google_sso("newuser@example.com"))
 
     async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
@@ -78,6 +79,7 @@ async def test_google_callback_creates_user_and_sets_tokens(test_app_and_db_pg, 
 async def test_google_callback_existing_user(test_app_and_db_pg, monkeypatch):
     app, _ = test_app_and_db_pg
     from src.app.api.v1 import oauth as oauth_mod
+
     monkeypatch.setattr(oauth_mod, "google_sso", _dummy_google_sso("existing@example.com"))
 
     async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
@@ -85,4 +87,3 @@ async def test_google_callback_existing_user(test_app_and_db_pg, monkeypatch):
         resp = await client.get("/api/v1/auth/google/callback")
         assert resp.status_code in (302, 307)
         assert "auth/callback?token=" in str(resp.headers.get("location"))
-

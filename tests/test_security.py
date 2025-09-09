@@ -99,4 +99,3 @@ class TestTokenCreation:
         monkeypatch.setattr("src.app.core.security.SECRET_KEY", Secret())
         token = await create_access_token({})
         assert isinstance(token, str) and token
-
