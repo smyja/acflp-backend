@@ -1,5 +1,4 @@
 import asyncio
-from typing import Optional
 
 from crudadmin import CRUDAdmin
 
@@ -61,7 +60,7 @@ def create_admin_interface() -> CRUDAdmin | None:
             "ssl": settings.CRUD_ADMIN_REDIS_SSL,
         }
 
-    initial_admin: Optional[dict[str, str]] = None
+    initial_admin: dict[str, str] | None = None
     if settings.ADMIN_USERNAME and settings.ADMIN_PASSWORD and _should_provide_initial_admin(settings.ADMIN_USERNAME):
         initial_admin = {"username": settings.ADMIN_USERNAME, "password": settings.ADMIN_PASSWORD}
 

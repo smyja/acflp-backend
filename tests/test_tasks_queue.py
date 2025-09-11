@@ -20,6 +20,7 @@ class TestBackgroundTasksUnit:
     @pytest.mark.asyncio
     async def test_create_task_success_path(self, monkeypatch):
         from src.app.core.utils import queue
+
         mock_pool = Mock()
         mock_pool.enqueue_job = AsyncMock(return_value=Mock(job_id="123"))
         monkeypatch.setattr(queue, "pool", mock_pool)

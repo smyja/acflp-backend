@@ -45,4 +45,3 @@ async def test_google_callback_generic_error_redirects(monkeypatch):
     out = await mod.google_callback(object(), resp, db=None)  # type: ignore[arg-type]
     assert isinstance(out, RedirectResponse)
     assert "/auth/error" in str(out.headers.get("location"))
-

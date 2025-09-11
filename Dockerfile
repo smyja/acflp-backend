@@ -17,11 +17,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Install system dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        build-essential \
-        curl \
-        libpq-dev \
-        gcc \
-        netcat-traditional \
+    build-essential \
+    curl \
+    libpq-dev \
+    gcc \
+    netcat-traditional \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -132,9 +132,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Install only runtime dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        libpq5 \
-        curl \
-        ca-certificates \
+    libpq5 \
+    curl \
+    ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /tmp/* \
@@ -171,14 +171,14 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Production command with Gunicorn
 CMD ["gunicorn", "src.app.main:app", \
-     "--worker-class", "uvicorn.workers.UvicornWorker", \
-     "--workers", "4", \
-     "--bind", "0.0.0.0:8000", \
-     "--access-logfile", "-", \
-     "--error-logfile", "-", \
-     "--log-level", "info", \
-     "--timeout", "120", \
-     "--keep-alive", "5", \
-     "--max-requests", "1000", \
-     "--max-requests-jitter", "100", \
-     "--preload"]
+    "--worker-class", "uvicorn.workers.UvicornWorker", \
+    "--workers", "4", \
+    "--bind", "0.0.0.0:8000", \
+    "--access-logfile", "-", \
+    "--error-logfile", "-", \
+    "--log-level", "info", \
+    "--timeout", "120", \
+    "--keep-alive", "5", \
+    "--max-requests", "1000", \
+    "--max-requests-jitter", "100", \
+    "--preload"]

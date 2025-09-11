@@ -37,4 +37,3 @@ async def test_verify_token_missing_sub_returns_none(monkeypatch):
     token = await sec.create_access_token({})
     out = await sec.verify_token(token, sec.TokenType.ACCESS, db=None)
     assert out is None
-

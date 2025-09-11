@@ -112,6 +112,7 @@ class TestBlacklistUnit:
 
         # Patch module attributes directly
         import src.app.core.security as sec
+
         monkeypatch.setattr(sec, "SECRET_KEY", Secret())
 
         created = {"count": 0}

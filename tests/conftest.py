@@ -149,6 +149,7 @@ async def test_app_and_db_pg(pg_container):
 
     # Convert DSN to async driver URL (handle both postgresql:// and postgresql+psycopg2://)
     import re
+
     sync_url: str = pg_container.get_connection_url()
     async_url = re.sub(r"^postgresql(\+psycopg2)?://", "postgresql+asyncpg://", sync_url)
 

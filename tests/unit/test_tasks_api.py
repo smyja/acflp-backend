@@ -42,6 +42,7 @@ async def test_create_task_not_found_after_creation(mock_db, current_user_dict, 
     task_create = TaskCreate(**sample_task_data)
 
     from src.app.api.v1 import tasks_api as mod
+
     mod.crud_tasks.create = AsyncMock(return_value=Mock(id=1))
     mod.crud_tasks.get = AsyncMock(return_value=None)
 

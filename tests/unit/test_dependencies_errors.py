@@ -34,4 +34,3 @@ async def test_get_optional_user_unexpected_exception(monkeypatch):
     monkeypatch.setattr(deps, "verify_token", boom)
     out = await deps.get_optional_user(DummyRequest("Bearer abc"), db=None)  # type: ignore[arg-type]
     assert out is None
-

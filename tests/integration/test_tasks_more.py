@@ -72,4 +72,3 @@ async def test_get_next_task_already_in_progress_forbidden(test_app_and_db_pg):
         # worker tries to claim again without finishing -> forbidden
         r2 = await client.post("/api/v1/tasks/next", headers={"Authorization": f"Bearer {worker_token}"})
         assert r2.status_code == 403
-

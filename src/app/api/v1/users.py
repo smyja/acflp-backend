@@ -147,6 +147,70 @@ async def erase_user(
     return {"message": "User deleted"}
 
 
+@router.patch("/user/me/languages", response_model=UserRead)
+async def update_my_language_preferences(
+    request: Request,
+    language_update: UserUpdate,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+) -> UserRead:
+    """Update current user's spoken languages.
+
+    Request body should contain `spoken_languages` field.
+    Example: {"spoken_languages": "en,es"}
+    """
+    # Validate that at least one language field is being updated
+    if language_update.spoken_languages is None:
+        raise ForbiddenException("Spoken languages must be provided")
+    updated_user = await crud_users.update(db=db, object=language_update, username=current_user["username"])
+
+    if updated_user is None:
+        raise NotFoundException("Failed to update user")
+
+    # Fetch the updated user
+    user_read = await crud_users.get(db=db, username=current_user["username"], schema_to_select=UserRead)
+    if user_read is None:
+        raise NotFoundException("Updated user not found")
+
+    return cast(UserRead, user_read)
+
+
+@router.patch(
+    "/admin/users/{user_id}/languages", response_model=UserRead, dependencies=[Depends(get_current_superuser)]
+)
+async def admin_update_user_languages(
+    request: Request,
+    user_id: int,
+    language_update: UserUpdate,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+) -> UserRead:
+    """Admin endpoint to update any user's spoken languages.
+
+    Allows admins to assign specific languages to users for targeted task assignment.
+    Example: {"spoken_languages": "en,es"}
+    """
+    # Validate that at least one language field is being updated
+    if language_update.spoken_languages is None:
+        raise ForbiddenException("Spoken languages must be provided")
+
+    # Check if user exists
+    user_exists = await crud_users.exists(db=db, id=user_id)
+    if not user_exists:
+        raise NotFoundException("User not found")
+
+    updated_user = await crud_users.update(db=db, object=language_update, id=user_id)
+
+    if updated_user is None:
+        raise NotFoundException("Failed to update user")
+
+    # Fetch the updated user
+    user_read = await crud_users.get(db=db, id=user_id, schema_to_select=UserRead)
+    if user_read is None:
+        raise NotFoundException("Updated user not found")
+
+    return cast(UserRead, user_read)
+
+
 # @router.delete("/db_user/{username}", dependencies=[Depends(get_current_superuser)])
 # async def erase_db_user(
 #     request: Request,
