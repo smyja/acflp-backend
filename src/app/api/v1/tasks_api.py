@@ -92,57 +92,7 @@ async def get_next_task(
     return cast(TaskRead, updated_task)
 
 
-@router.patch(
-    "/admin/{task_id}/assign/{user_id}", response_model=TaskRead, dependencies=[Depends(get_current_superuser)]
-)
-async def admin_assign_task(
-    request: Request,
-    task_id: int,
-    user_id: int,
-    db: Annotated[AsyncSession, Depends(async_get_db)],
-) -> TaskRead:
-    """Admin endpoint to manually assign a specific task to a specific user.
 
-    This allows admins to override the automatic language-based assignment
-    and manually assign tasks for better workload distribution.
-    """
-    # Check if task exists and is available
-    task = await crud_tasks.get(db=db, id=task_id)
-    if not task:
-        raise NotFoundException("Task not found")
-
-    task_status = task.status if hasattr(task, "status") else task.get("status")
-    if task_status != "pending":
-        raise ForbiddenException("Task is not available for assignment")
-
-    # Check if user exists
-    from ...crud.crud_users import crud_users
-
-    user_exists = await crud_users.exists(db=db, id=user_id)
-    if not user_exists:
-        raise NotFoundException("User not found")
-
-    # Check if user already has a task in progress
-    in_progress_task = await crud_tasks.get_multi(db=db, assignee_id=user_id, status="in_progress", limit=1)
-    if in_progress_task and in_progress_task["data"]:
-        raise ForbiddenException("User already has a task in progress")
-
-    # Assign the task
-    await crud_tasks.update(
-        db=db,
-        id=task_id,
-        object=TaskUpdate(
-            status="in_progress",
-            assignee_id=user_id,
-        ),
-    )
-
-    # Fetch the updated task
-    updated_task = await crud_tasks.get(db=db, id=task_id, schema_to_select=TaskRead)
-    if updated_task is None:
-        raise NotFoundException("Updated task not found")
-
-    return cast(TaskRead, updated_task)
 
 
 @router.post("/", response_model=TaskRead, status_code=201)
