@@ -1,4 +1,3 @@
-from typing import List
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,7 +7,7 @@ from ..schemas.language import LanguageCreate
 
 
 class CRUDLanguage:
-    async def get_all(self, db: AsyncSession) -> List[Language]:
+    async def get_all(self, db: AsyncSession) -> list[Language]:
         """Get all available languages."""
         result = await db.execute(select(Language))
         return result.scalars().all()
@@ -32,7 +31,7 @@ class CRUDLanguage:
             language = await self.create(db, LanguageCreate(name=name))
         return language
 
-    async def update_user_languages(self, db: AsyncSession, user: User, language_names: List[str]) -> User:
+    async def update_user_languages(self, db: AsyncSession, user: User, language_names: list[str]) -> User:
         """Update a user's languages."""
         # Clear existing languages
         user.languages.clear()

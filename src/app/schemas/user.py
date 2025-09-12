@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
-from typing import List
 
 from ..core.schemas import PersistentDeletion, TimestampSchema, UUIDSchema
 
@@ -32,7 +31,7 @@ class UserCreate(UserBase):
     model_config = ConfigDict(extra="forbid")
 
     password: Annotated[str, Field(pattern=r"^.{8,}|[0-9]+|[A-Z]+|[a-z]+|[^a-zA-Z0-9]+$", examples=["Str1ngst!"])]
-    language_names: Annotated[List[str] | None, Field(examples=[["English", "Yoruba", "Igbo"]], default=None)]
+    language_names: Annotated[list[str] | None, Field(examples=[["English", "Yoruba", "Igbo"]], default=None)]
 
 
 class UserCreateInternal(UserBase):

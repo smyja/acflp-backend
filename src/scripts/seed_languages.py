@@ -1,12 +1,11 @@
 import asyncio
-from typing import Iterable
+from collections.abc import Iterable
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.core.db.database import local_session
 from src.app.models.language import Language
-
 
 DEFAULT_LANGUAGES: list[str] = [
     # Core

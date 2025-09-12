@@ -1,17 +1,15 @@
-from typing import Annotated, List
+from typing import Annotated
 
 from crudadmin import CRUDAdmin
 from crudadmin.admin_interface.model_view import PasswordTransformer
-from pydantic import BaseModel, Field, EmailStr
-from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel, EmailStr, Field
 
 from ..core.security import get_password_hash
 from ..models.language import Language
 from ..models.task import Task
 from ..models.user import User
-from ..schemas.language import LanguageCreate, LanguageRead
+from ..schemas.language import LanguageCreate
 from ..schemas.task import TaskUpdate
-from ..schemas.user import UserUpdate
 
 
 class TaskCreateAdmin(BaseModel):
@@ -33,21 +31,25 @@ class UserCreateAdmin(BaseModel):
 
     CRUDAdmin auto-detects many-to-many when the schema exposes a list field
     matching the relationship name. Our relationship is `languages`, and the
-    related PK is `Language.name` (str), so we use List[str].
+    related PK is `Language.name` (str), so we use list[str].
     """
+
     name: Annotated[str, Field(min_length=2, max_length=30, examples=["User Userson"])]
     username: Annotated[str, Field(min_length=2, max_length=20, pattern=r"^[a-z0-9][a-z0-9_-]*$", examples=["userson"])]
     email: Annotated[EmailStr, Field(examples=["user.userson@example.com"])]
     password: Annotated[str, Field(examples=["Str1ngst!"], min_length=1)]
     profile_image_url: Annotated[
         str | None,
-        Field(pattern=r"^(https?|ftp)://[^\s/$.?#].[^\s]*$", examples=["https://www.profileimageurl.com"], default=None),
+        Field(
+            pattern=r"^(https?|ftp)://[^\s/$.?#].[^\s]*$", examples=["https://www.profileimageurl.com"], default=None
+        ),
     ]
-    languages: Annotated[List[str] | None, Field(examples=[["English", "Yoruba"]], default=None)]
+    languages: Annotated[list[str] | None, Field(examples=[["English", "Yoruba"]], default=None)]
 
 
 class UserUpdateAdmin(BaseModel):
     """Admin schema for updating users with auto M2M languages."""
+
     name: Annotated[str | None, Field(min_length=2, max_length=30, default=None)]
     username: Annotated[
         str | None,
@@ -58,7 +60,7 @@ class UserUpdateAdmin(BaseModel):
         str | None,
         Field(pattern=r"^(https?|ftp)://[^\s/$.?#].[^\s]*$", default=None),
     ]
-    languages: Annotated[List[str] | None, Field(default=None)]
+    languages: Annotated[list[str] | None, Field(default=None)]
 
 
 def register_admin_views(admin: CRUDAdmin) -> None:

@@ -1,10 +1,12 @@
-import asyncio
+import logging
 
 from crudadmin import CRUDAdmin
 
 # Runtime monkey patch: carefully coerce string IDs to integers for models
 # that actually use an integer `id` column (e.g., User, Task). Do NOT coerce
 # for models like Language which use a string primary key.
+logger = logging.getLogger(__name__)
+
 try:  # pragma: no cover – best-effort safety patch
     from fastcrud.crud.fast_crud import FastCRUD as _FastCRUD  # type: ignore
 
@@ -20,34 +22,42 @@ try:  # pragma: no cover – best-effort safety patch
                     kwargs["id"] = int(v)
         except Exception:
             # Never block operations due to the patch itself
-            pass
+            logger.exception("Admin FastCRUD patch: failed to coerce id in kwargs")
 
     _orig_get = _FastCRUD.get
+
     async def _patched_get(self, *args, **kwargs):  # type: ignore[no-redef]
         _coerce_id_for_model(self, kwargs)
         return await _orig_get(self, *args, **kwargs)
+
     _FastCRUD.get = _patched_get  # type: ignore[assignment]
 
     # Patch a few more commonly used methods that receive id in kwargs
     _orig_update = _FastCRUD.update
+
     async def _patched_update(self, *args, **kwargs):  # type: ignore[no-redef]
         _coerce_id_for_model(self, kwargs)
         return await _orig_update(self, *args, **kwargs)
+
     _FastCRUD.update = _patched_update  # type: ignore[assignment]
 
     _orig_delete = _FastCRUD.delete
+
     async def _patched_delete(self, *args, **kwargs):  # type: ignore[no-redef]
         _coerce_id_for_model(self, kwargs)
         return await _orig_delete(self, *args, **kwargs)
+
     _FastCRUD.delete = _patched_delete  # type: ignore[assignment]
 
     _orig_exists = _FastCRUD.exists
+
     async def _patched_exists(self, *args, **kwargs):  # type: ignore[no-redef]
         _coerce_id_for_model(self, kwargs)
         return await _orig_exists(self, *args, **kwargs)
+
     _FastCRUD.exists = _patched_exists  # type: ignore[assignment]
 except Exception:  # pragma: no cover – if anything fails, admin will still start
-    pass
+    logger.warning("Admin FastCRUD patch: initialization failed", exc_info=True)
 
 from ..core.config import settings
 from ..core.db.database import async_get_db

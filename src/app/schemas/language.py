@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import List
 
 
 class LanguageBase(BaseModel):
@@ -18,11 +17,7 @@ class LanguageRead(LanguageBase):
 
 
 class UserLanguageUpdate(BaseModel):
-    language_names: List[str]
+    language_names: list[str]
 
     class Config:
-        json_schema_extra = {
-            "example": {
-                "language_names": ["English", "Yoruba", "Igbo"]
-            }
-        }
+        json_schema_extra = {"example": {"language_names": ["English", "Yoruba", "Igbo"]}}

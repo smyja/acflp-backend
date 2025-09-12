@@ -35,13 +35,11 @@ async def get_next_task(
         raise ForbiddenException("You already have a task in progress")
 
     # Get user's language preferences from relationship
-    from ...models.user import User
     from ...models.language import Language
+    from ...models.user import User
 
     # Relationship: explicit query to avoid lazy-load pitfalls in async
-    result = await db.execute(
-        select(Language.name).join(User.languages).where(User.id == current_user["id"])
-    )
+    result = await db.execute(select(Language.name).join(User.languages).where(User.id == current_user["id"]))
     language_rows = result.all()
     preferred_languages = [row[0] for row in language_rows]
 
@@ -90,9 +88,6 @@ async def get_next_task(
         raise NotFoundException("Updated task not found")
 
     return cast(TaskRead, updated_task)
-
-
-
 
 
 @router.post("/", response_model=TaskRead, status_code=201)

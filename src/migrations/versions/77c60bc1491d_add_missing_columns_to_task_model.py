@@ -7,6 +7,7 @@ Create Date: 2025-08-30 22:42:31.238776
 """
 
 from collections.abc import Sequence
+from contextlib import suppress
 from typing import Union
 
 from alembic import op
@@ -32,24 +33,15 @@ def upgrade() -> None:
         indexes = inspector.get_indexes("token_blacklist")
         index_names = {idx["name"] for idx in indexes}
         if op.f("ix_token_blacklist_token") in index_names or "ix_token_blacklist_token" in index_names:
-            try:
+            with suppress(Exception):
                 op.drop_index(op.f("ix_token_blacklist_token"), table_name="token_blacklist")
-            except Exception:
-                # Index may have a different name or already be absent; continue
-                pass
-        try:
+        with suppress(Exception):
             op.drop_table("token_blacklist")
-        except Exception:
-            # Table might be referenced or already dropped
-            pass
 
     # Ensure unique constraint on rate_limit.id if table exists and constraint is missing
     if "rate_limit" in table_names:
-        try:
+        with suppress(Exception):
             op.create_unique_constraint(None, "rate_limit", ["id"])
-        except Exception:
-            # Constraint possibly already exists
-            pass
 
     # Add missing task columns and indexes if absent
     if "task" in table_names:
@@ -67,33 +59,23 @@ def upgrade() -> None:
         existing_indexes = {idx["name"] for idx in inspector.get_indexes("task")}
         ix_assignee = op.f("ix_task_assignee_id")
         if ix_assignee not in existing_indexes:
-            try:
+            with suppress(Exception):
                 op.create_index(ix_assignee, "task", ["assignee_id"], unique=False)
-            except Exception:
-                pass
         ix_translated_by = op.f("ix_task_translated_by_user_id")
         if ix_translated_by not in existing_indexes:
-            try:
+            with suppress(Exception):
                 op.create_index(ix_translated_by, "task", ["translated_by_user_id"], unique=False)
-            except Exception:
-                pass
 
         # Foreign keys (attempt create; ignore if they already exist)
-        try:
+        with suppress(Exception):
             op.create_foreign_key(None, "task", "user", ["assignee_id"], ["id"])
-        except Exception:
-            pass
-        try:
+        with suppress(Exception):
             op.create_foreign_key(None, "task", "user", ["translated_by_user_id"], ["id"])
-        except Exception:
-            pass
 
     # Unique constraint on tier.id if table exists
     if "tier" in table_names:
-        try:
+        with suppress(Exception):
             op.create_unique_constraint(None, "tier", ["id"])
-        except Exception:
-            pass
     # ### end Alembic commands ###
 
 

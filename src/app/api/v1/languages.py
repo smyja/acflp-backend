@@ -1,18 +1,19 @@
-from typing import List, Annotated
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import async_get_db
-from ...schemas.language import LanguageRead, UserLanguageUpdate
-from ...models.user import User
 from ...models.language import Language
-from ..dependencies import get_current_user, get_current_superuser
+from ...models.user import User
+from ...schemas.language import LanguageRead, UserLanguageUpdate
+from ..dependencies import get_current_user
 
 router = APIRouter()
 
 
-@router.get("/", response_model=List[LanguageRead])
+@router.get("/", response_model=list[LanguageRead])
 async def get_languages(db: Annotated[AsyncSession, Depends(async_get_db)]):
     """Get all available languages."""
     result = await db.execute(select(Language))
@@ -54,5 +55,3 @@ async def update_my_languages(
         "message": "Languages updated successfully",
         "languages": [lang.name for lang in user.languages],
     }
-
-

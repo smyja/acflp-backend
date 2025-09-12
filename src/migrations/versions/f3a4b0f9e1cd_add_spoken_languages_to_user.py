@@ -39,4 +39,3 @@ def downgrade() -> None:
     if "user" in inspector.get_table_names():
         # Drop column if it exists
         op.execute('ALTER TABLE "user" DROP COLUMN IF EXISTS spoken_languages')
-
