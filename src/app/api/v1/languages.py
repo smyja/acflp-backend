@@ -33,7 +33,8 @@ async def update_my_languages(
     # Resolve or create languages, then replace association list
     resolved: list[Language] = []
     for name in language_update.language_names:
-        lang = await db.get(Language, name)
+        result = await db.execute(select(Language).where(Language.name == name))
+        lang = result.scalar_one_or_none()
         if not lang:
             lang = Language(name=name)
             db.add(lang)
@@ -55,34 +56,3 @@ async def update_my_languages(
     }
 
 
-@router.patch("/admin/{user_id}", response_model=dict, dependencies=[Depends(get_current_superuser)])
-async def admin_update_user_languages(
-    user_id: int,
-    language_update: UserLanguageUpdate,
-    db: Annotated[AsyncSession, Depends(async_get_db)],
-):
-    """Admin: replace a user's languages by provided names."""
-    user = await db.get(User, user_id)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-
-    resolved: list[Language] = []
-    for name in language_update.language_names:
-        lang = await db.get(Language, name)
-        if not lang:
-            lang = Language(name=name)
-            db.add(lang)
-            await db.flush()
-        resolved.append(lang)
-
-    user.languages.clear()
-    for lang in resolved:
-        user.languages.append(lang)
-
-    await db.commit()
-    await db.refresh(user)
-
-    return {
-        "message": "Languages updated successfully",
-        "languages": [lang.name for lang in user.languages],
-    }

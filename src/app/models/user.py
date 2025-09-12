@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 import uuid as uuid_pkg
 
-from sqlalchemy import DateTime, String, Table, Column, ForeignKey
+from sqlalchemy import DateTime, String, Table, Column, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..core.db.database import Base
@@ -10,7 +10,7 @@ user_languages = Table(
     "user_languages",
     Base.metadata,
     Column("user_id", ForeignKey("user.id"), primary_key=True),
-    Column("language_name", ForeignKey("languages.name"), primary_key=True),
+    Column("language_id", ForeignKey("languages.id"), primary_key=True),
 )
 
 class User(Base):

@@ -27,7 +27,8 @@ dependencies = [
     "arq>=0.25.0",
     "bcrypt>=4.1.1",
     "fastcrud>=0.15.5",
-    "crudadmin>=0.4.2",
+    # Use upgraded fork of crudadmin
+    "crudadmin @ git+https://github.com/smyja/crudadmin@main",
     "gunicorn>=23.0.0",
     "ruff>=0.11.13",
     "mypy>=1.16.0",
@@ -51,7 +52,8 @@ dev = [
     "sqlalchemy>=2.0.0",
     "pydantic>=2.11.0",
     "pydantic-settings>=2.10.0",
-    "crudadmin>=0.4.2",
+    # Match runtime: use the same upgraded fork
+    "crudadmin @ git+https://github.com/smyja/crudadmin@main",
     "asyncpg>=0.30.0",
     "python-jose>=3.5.0",
     "bcrypt>=4.3.0",
@@ -66,6 +68,9 @@ dev = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.hatch.build.targets.sdist]
 include = ["src/"]

@@ -2,42 +2,48 @@ import asyncio
 
 from crudadmin import CRUDAdmin
 
-# Runtime monkey patch: coerce string IDs to integers in FastCRUD.get
-# Some admin routes pass path params as strings (e.g., "1"). Postgres won't
-# compare integer columns to VARCHAR without an explicit cast, which causes
-# `operator does not exist: integer = character varying`. To avoid touching the
-# third-party admin package internals, coerce common numeric identifiers.
+# Runtime monkey patch: carefully coerce string IDs to integers for models
+# that actually use an integer `id` column (e.g., User, Task). Do NOT coerce
+# for models like Language which use a string primary key.
 try:  # pragma: no cover – best-effort safety patch
     from fastcrud.crud.fast_crud import FastCRUD as _FastCRUD  # type: ignore
 
-    def _coerce_id(kwargs: dict) -> None:
-        if "id" in kwargs and isinstance(kwargs["id"], str):
-            v = kwargs["id"].strip()
-            if v.isdigit():
-                kwargs["id"] = int(v)
+    def _coerce_id_for_model(self, kwargs: dict) -> None:
+        try:
+            model = getattr(self, "model", None)
+            # Only coerce if the model has an `id` attribute (integer PK expected)
+            if not model or not hasattr(model, "id"):
+                return
+            if "id" in kwargs and isinstance(kwargs["id"], str):
+                v = kwargs["id"].strip()
+                if v.isdigit():
+                    kwargs["id"] = int(v)
+        except Exception:
+            # Never block operations due to the patch itself
+            pass
 
     _orig_get = _FastCRUD.get
     async def _patched_get(self, *args, **kwargs):  # type: ignore[no-redef]
-        _coerce_id(kwargs)
+        _coerce_id_for_model(self, kwargs)
         return await _orig_get(self, *args, **kwargs)
     _FastCRUD.get = _patched_get  # type: ignore[assignment]
 
     # Patch a few more commonly used methods that receive id in kwargs
     _orig_update = _FastCRUD.update
     async def _patched_update(self, *args, **kwargs):  # type: ignore[no-redef]
-        _coerce_id(kwargs)
+        _coerce_id_for_model(self, kwargs)
         return await _orig_update(self, *args, **kwargs)
     _FastCRUD.update = _patched_update  # type: ignore[assignment]
 
     _orig_delete = _FastCRUD.delete
     async def _patched_delete(self, *args, **kwargs):  # type: ignore[no-redef]
-        _coerce_id(kwargs)
+        _coerce_id_for_model(self, kwargs)
         return await _orig_delete(self, *args, **kwargs)
     _FastCRUD.delete = _patched_delete  # type: ignore[assignment]
 
     _orig_exists = _FastCRUD.exists
     async def _patched_exists(self, *args, **kwargs):  # type: ignore[no-redef]
-        _coerce_id(kwargs)
+        _coerce_id_for_model(self, kwargs)
         return await _orig_exists(self, *args, **kwargs)
     _FastCRUD.exists = _patched_exists  # type: ignore[assignment]
 except Exception:  # pragma: no cover – if anything fails, admin will still start

@@ -34,7 +34,7 @@ async def get_next_task(
     if in_progress_task and in_progress_task["data"]:
         raise ForbiddenException("You already have a task in progress")
 
-    # Get user's language preferences from relationship first; fallback to CSV
+    # Get user's language preferences from relationship
     from ...models.user import User
     from ...models.language import Language
 
@@ -50,9 +50,9 @@ async def get_next_task(
     # Build query with language filtering and workload balancing
     query = select(Task).where(Task.status == "pending")
 
-    # If user has specified languages, filter by them
+    # If user has specified languages, filter by task target_language to match user skills
     if preferred_languages:
-        query = query.where(Task.source_language.in_(preferred_languages))
+        query = query.where(Task.target_language.in_(preferred_languages))
 
     # Prioritize tasks by creation time (older tasks first) for fair distribution
     # Use FOR UPDATE SKIP LOCKED to atomically claim a task

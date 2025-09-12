@@ -6,13 +6,12 @@ from pydantic import BaseModel, Field, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.security import get_password_hash
-from ..crud import language as crud_language
 from ..models.language import Language
 from ..models.task import Task
 from ..models.user import User
 from ..schemas.language import LanguageCreate, LanguageRead
 from ..schemas.task import TaskUpdate
-from ..schemas.user import UserCreate, UserUpdate
+from ..schemas.user import UserUpdate
 
 
 class TaskCreateAdmin(BaseModel):
@@ -29,50 +28,37 @@ class TaskCreateAdmin(BaseModel):
     status: Annotated[str, Field(max_length=50, examples=["pending"], default="pending")]
 
 
-class UserUpdateAdmin(BaseModel):
-    """Admin-specific schema for updating users with new language system."""
-    name: Annotated[str | None, Field(min_length=2, max_length=30, examples=["User Userberg"], default=None)]
-    username: Annotated[
-        str | None,
-        Field(
-            min_length=2,
-            max_length=20,
-            pattern=r"^[a-z0-9][a-z0-9_-]*$",
-            examples=["userberg"],
-            default=None,
-        ),
-    ]
-    email: Annotated[EmailStr | None, Field(examples=["user.userberg@example.com"], default=None)]
+class UserCreateAdmin(BaseModel):
+    """Admin schema for creating users with auto M2M languages.
+
+    CRUDAdmin auto-detects many-to-many when the schema exposes a list field
+    matching the relationship name. Our relationship is `languages`, and the
+    related PK is `Language.name` (str), so we use List[str].
+    """
+    name: Annotated[str, Field(min_length=2, max_length=30, examples=["User Userson"])]
+    username: Annotated[str, Field(min_length=2, max_length=20, pattern=r"^[a-z0-9][a-z0-9_-]*$", examples=["userson"])]
+    email: Annotated[EmailStr, Field(examples=["user.userson@example.com"])]
+    password: Annotated[str, Field(examples=["Str1ngst!"], min_length=1)]
     profile_image_url: Annotated[
         str | None,
-        Field(
-            pattern=r"^(https?|ftp)://[^\s/$.?#].[^\s]*$", examples=["https://www.profileimageurl.com"], default=None
-        ),
+        Field(pattern=r"^(https?|ftp)://[^\s/$.?#].[^\s]*$", examples=["https://www.profileimageurl.com"], default=None),
     ]
-    language_names: Annotated[List[str] | None, Field(examples=[["English", "Yoruba", "Igbo"]], default=None)]
+    languages: Annotated[List[str] | None, Field(examples=[["English", "Yoruba"]], default=None)]
 
 
-async def custom_user_update_handler(db: AsyncSession, user: User, update_data: UserUpdateAdmin) -> User:
-    """Custom handler for updating users with language relationships."""
-    # Update basic user fields
-    if update_data.name is not None:
-        user.name = update_data.name
-    if update_data.username is not None:
-        user.username = update_data.username
-    if update_data.email is not None:
-        user.email = update_data.email
-    if update_data.profile_image_url is not None:
-        user.profile_image_url = update_data.profile_image_url
-    
-    # Handle language relationships
-    if update_data.language_names is not None:
-        await crud_language.update_user_languages(
-            db=db,
-            user=user,
-            language_names=update_data.language_names,
-        )
-    
-    return user
+class UserUpdateAdmin(BaseModel):
+    """Admin schema for updating users with auto M2M languages."""
+    name: Annotated[str | None, Field(min_length=2, max_length=30, default=None)]
+    username: Annotated[
+        str | None,
+        Field(min_length=2, max_length=20, pattern=r"^[a-z0-9][a-z0-9_-]*$", default=None),
+    ]
+    email: Annotated[EmailStr | None, Field(default=None)]
+    profile_image_url: Annotated[
+        str | None,
+        Field(pattern=r"^(https?|ftp)://[^\s/$.?#].[^\s]*$", default=None),
+    ]
+    languages: Annotated[List[str] | None, Field(default=None)]
 
 
 def register_admin_views(admin: CRUDAdmin) -> None:
@@ -93,8 +79,8 @@ def register_admin_views(admin: CRUDAdmin) -> None:
 
     admin.add_view(
         model=User,
-        create_schema=UserCreate,
-        update_schema=UserUpdate,  # Use standard update schema compatible with FastCRUD
+        create_schema=UserCreateAdmin,
+        update_schema=UserUpdateAdmin,
         allowed_actions={"view", "create", "update"},
         password_transformer=password_transformer,
     )

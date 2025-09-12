@@ -21,6 +21,8 @@ RUN apt-get update \
     curl \
     libpq-dev \
     gcc \
+    git \
+    ca-certificates \
     netcat-traditional \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*

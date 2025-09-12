@@ -11,6 +11,8 @@ from ...core.exceptions.http_exceptions import DuplicateValueException, Forbidde
 from ...core.security import blacklist_token, get_password_hash, oauth2_scheme
 from ...crud.crud_users import crud_users
 from ...schemas.user import UserCreate, UserCreateInternal, UserRead, UserUpdate
+from ...models.user import User as UserModel
+from ...crud import language as crud_language
 
 router = APIRouter(tags=["users"])
 
@@ -31,9 +33,12 @@ async def write_user(
     if username_exists:
         raise DuplicateValueException("Username not available")
 
-    user_internal_dict = user.model_dump()
-    user_internal_dict["hashed_password"] = get_password_hash(password=user_internal_dict["password"])
-    del user_internal_dict["password"]
+    # Prepare payload: hash password and extract optional language names
+    payload = user.model_dump()
+    raw_password = payload.pop("password")
+    language_names = payload.pop("language_names", None)
+    user_internal_dict = payload
+    user_internal_dict["hashed_password"] = get_password_hash(password=raw_password)
 
     user_internal = UserCreateInternal(**user_internal_dict)
     created_user = await _await_maybe(crud_users.create(db=db, object=user_internal))
@@ -51,6 +56,12 @@ async def write_user(
         user_id = None
     if user_id is None:
         raise NotFoundException("Created user has no ID")
+
+    # If languages were provided at signup, persist relationships
+    if language_names:
+        orm_user = await db.get(UserModel, user_id)
+        if orm_user is not None:
+            await crud_language.update_user_languages(db=db, user=orm_user, language_names=language_names)
 
     user_read = await _await_maybe(crud_users.get(db=db, id=user_id, schema_to_select=UserRead))
     if user_read is None:
