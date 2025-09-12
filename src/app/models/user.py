@@ -1,11 +1,17 @@
 from datetime import UTC, datetime
 import uuid as uuid_pkg
 
-from sqlalchemy import DateTime, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import DateTime, String, Table, Column, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..core.db.database import Base
 
+user_languages = Table(
+    "user_languages",
+    Base.metadata,
+    Column("user_id", ForeignKey("user.id"), primary_key=True),
+    Column("language_name", ForeignKey("languages.name"), primary_key=True),
+)
 
 class User(Base):
     __tablename__ = "user"
@@ -19,7 +25,9 @@ class User(Base):
 
     profile_image_url: Mapped[str] = mapped_column(String, default="https://profileimageurl.com")
 
-    spoken_languages: Mapped[str | None] = mapped_column(String, default=None)
+    # Languages are modeled via the many-to-many relationship `languages`.
+
+    languages = relationship("Language", secondary=user_languages, back_populates="users")
 
     uuid: Mapped[uuid_pkg.UUID] = mapped_column(default_factory=uuid_pkg.uuid4, primary_key=True, unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default_factory=lambda: datetime.now(UTC))

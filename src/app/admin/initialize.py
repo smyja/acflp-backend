@@ -2,42 +2,50 @@ import asyncio
 
 from crudadmin import CRUDAdmin
 
+# Runtime monkey patch: coerce string IDs to integers in FastCRUD.get
+# Some admin routes pass path params as strings (e.g., "1"). Postgres won't
+# compare integer columns to VARCHAR without an explicit cast, which causes
+# `operator does not exist: integer = character varying`. To avoid touching the
+# third-party admin package internals, coerce common numeric identifiers.
+try:  # pragma: no cover – best-effort safety patch
+    from fastcrud.crud.fast_crud import FastCRUD as _FastCRUD  # type: ignore
+
+    def _coerce_id(kwargs: dict) -> None:
+        if "id" in kwargs and isinstance(kwargs["id"], str):
+            v = kwargs["id"].strip()
+            if v.isdigit():
+                kwargs["id"] = int(v)
+
+    _orig_get = _FastCRUD.get
+    async def _patched_get(self, *args, **kwargs):  # type: ignore[no-redef]
+        _coerce_id(kwargs)
+        return await _orig_get(self, *args, **kwargs)
+    _FastCRUD.get = _patched_get  # type: ignore[assignment]
+
+    # Patch a few more commonly used methods that receive id in kwargs
+    _orig_update = _FastCRUD.update
+    async def _patched_update(self, *args, **kwargs):  # type: ignore[no-redef]
+        _coerce_id(kwargs)
+        return await _orig_update(self, *args, **kwargs)
+    _FastCRUD.update = _patched_update  # type: ignore[assignment]
+
+    _orig_delete = _FastCRUD.delete
+    async def _patched_delete(self, *args, **kwargs):  # type: ignore[no-redef]
+        _coerce_id(kwargs)
+        return await _orig_delete(self, *args, **kwargs)
+    _FastCRUD.delete = _patched_delete  # type: ignore[assignment]
+
+    _orig_exists = _FastCRUD.exists
+    async def _patched_exists(self, *args, **kwargs):  # type: ignore[no-redef]
+        _coerce_id(kwargs)
+        return await _orig_exists(self, *args, **kwargs)
+    _FastCRUD.exists = _patched_exists  # type: ignore[assignment]
+except Exception:  # pragma: no cover – if anything fails, admin will still start
+    pass
+
 from ..core.config import settings
-from ..core.db.database import async_engine, async_get_db
+from ..core.db.database import async_get_db
 from .views import register_admin_views
-
-
-def _should_provide_initial_admin(username: str) -> bool:
-    """Return True if we should pass initial_admin to CRUDAdmin.
-
-    We proactively check if an admin user with the configured username already
-    exists in the admin table to avoid UNIQUE constraint violations on
-    subsequent startups or requests. If the table doesn't exist yet or any
-    error occurs while checking, we return True to allow first-time creation.
-    """
-
-    async def _check() -> bool:
-        try:
-            async with async_engine.connect() as conn:
-                # Attempt a direct query; if table doesn't exist this will raise.
-                result = await conn.exec_driver_sql(
-                    "SELECT 1 FROM admin_user WHERE username = :username LIMIT 1",
-                    {"username": username},
-                )
-                row = result.first()
-                return row is None
-        except Exception:
-            # If table is missing or any error, treat as first-time setup.
-            return True
-
-    # create_admin_interface is called at import time (no running loop),
-    # so it's safe to run a short async check synchronously here.
-    try:
-        return asyncio.run(_check())
-    except RuntimeError:
-        # Fallback if there's already a running loop (e.g., unit tests)
-        # In that case, don't risk blocking; let CRUDAdmin handle creation.
-        return True
 
 
 def create_admin_interface() -> CRUDAdmin | None:
@@ -60,8 +68,10 @@ def create_admin_interface() -> CRUDAdmin | None:
             "ssl": settings.CRUD_ADMIN_REDIS_SSL,
         }
 
+    # Provide initial admin if configured; duplicate creation is handled gracefully
+    # during admin.initialize() in app lifespan.
     initial_admin: dict[str, str] | None = None
-    if settings.ADMIN_USERNAME and settings.ADMIN_PASSWORD and _should_provide_initial_admin(settings.ADMIN_USERNAME):
+    if settings.ADMIN_USERNAME and settings.ADMIN_PASSWORD:
         initial_admin = {"username": settings.ADMIN_USERNAME, "password": settings.ADMIN_PASSWORD}
 
     admin = CRUDAdmin(

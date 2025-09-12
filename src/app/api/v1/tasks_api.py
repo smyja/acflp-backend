@@ -34,25 +34,25 @@ async def get_next_task(
     if in_progress_task and in_progress_task["data"]:
         raise ForbiddenException("You already have a task in progress")
 
-    # Get user's language preferences
-    from ...crud.crud_users import crud_users
+    # Get user's language preferences from relationship first; fallback to CSV
+    from ...models.user import User
+    from ...models.language import Language
 
-    user = await crud_users.get(db=db, id=current_user["id"])
-    if not user:
-        raise NotFoundException("User not found")
+    # Relationship: explicit query to avoid lazy-load pitfalls in async
+    result = await db.execute(
+        select(Language.name).join(User.languages).where(User.id == current_user["id"])
+    )
+    language_rows = result.all()
+    preferred_languages = [row[0] for row in language_rows]
 
-    spoken_languages = []
-    if hasattr(user, "spoken_languages") and user.spoken_languages:
-        spoken_languages = [lang.strip() for lang in user.spoken_languages.split(",")]
-    elif user.get("spoken_languages"):
-        spoken_languages = [lang.strip() for lang in user["spoken_languages"].split(",")]
+    # If the user has no explicit language preferences, proceed without filtering
 
     # Build query with language filtering and workload balancing
     query = select(Task).where(Task.status == "pending")
 
     # If user has specified languages, filter by them
-    if spoken_languages:
-        query = query.where(Task.source_language.in_(spoken_languages))
+    if preferred_languages:
+        query = query.where(Task.source_language.in_(preferred_languages))
 
     # Prioritize tasks by creation time (older tasks first) for fair distribution
     # Use FOR UPDATE SKIP LOCKED to atomically claim a task
@@ -61,7 +61,7 @@ async def get_next_task(
 
     if not task_row:
         # If no tasks found with specified languages, try without language filtering as fallback
-        if spoken_languages:
+        if preferred_languages:
             result = await db.execute(
                 select(Task)
                 .where(Task.status == "pending")

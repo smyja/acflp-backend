@@ -25,14 +25,12 @@ class UserRead(BaseModel):
     username: Annotated[str, Field(min_length=2, max_length=20, pattern=r"^[a-z0-9][a-z0-9_-]*$", examples=["userson"])]
     email: Annotated[EmailStr, Field(examples=["user.userson@example.com"])]
     profile_image_url: str
-    spoken_languages: Annotated[str | None, Field(examples=["en,es"], default=None)]
 
 
 class UserCreate(UserBase):
     model_config = ConfigDict(extra="forbid")
 
     password: Annotated[str, Field(pattern=r"^.{8,}|[0-9]+|[A-Z]+|[a-z]+|[^a-zA-Z0-9]+$", examples=["Str1ngst!"])]
-    spoken_languages: Annotated[str | None, Field(examples=["en,es"], default=None)]
 
 
 class UserCreateInternal(UserBase):
@@ -60,7 +58,6 @@ class UserUpdate(BaseModel):
             pattern=r"^(https?|ftp)://[^\s/$.?#].[^\s]*$", examples=["https://www.profileimageurl.com"], default=None
         ),
     ]
-    spoken_languages: Annotated[str | None, Field(examples=["en,es"], default=None)]
 
 
 class UserUpdateInternal(UserUpdate):

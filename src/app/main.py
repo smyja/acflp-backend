@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from .admin.initialize import create_admin_interface
 from .api import router
+from .admin.tools import router as admin_tools_router
 from .core.config import settings
 from .core.setup import create_application, lifespan_factory
 
@@ -53,3 +54,6 @@ app = create_application(router=router, settings=settings, lifespan=lifespan_wit
 # Mount admin interface if enabled
 if admin:
     app.mount(settings.CRUD_ADMIN_MOUNT_PATH, admin.app)
+
+# Mount lightweight admin tools (token-protected) alongside admin panel
+app.include_router(admin_tools_router)
