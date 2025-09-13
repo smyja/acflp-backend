@@ -6,11 +6,11 @@ from fastapi import FastAPI
 from sqlalchemy.exc import IntegrityError
 
 from .admin.initialize import create_admin_interface
-from .core.logging_config import setup_logging
-from .middleware.request_id import RequestIDMiddleware
 from .api import router
 from .core.config import settings
+from .core.logging_config import setup_logging
 from .core.setup import create_application, lifespan_factory
+from .middleware.request_id import RequestIDMiddleware
 
 admin = create_admin_interface()
 

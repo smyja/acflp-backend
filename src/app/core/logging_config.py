@@ -1,9 +1,9 @@
+from contextvars import ContextVar
+from datetime import UTC, datetime
 import json
 import logging
 import os
-from datetime import datetime, timezone
 from typing import Any
-from contextvars import ContextVar
 
 from .config import Settings
 
@@ -19,7 +19,7 @@ REQUEST_ID_CTX: ContextVar[str | None] = ContextVar("request_id", default=None)
 
 
 def _iso_utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 class JsonFormatter(logging.Formatter):
@@ -35,10 +35,10 @@ class JsonFormatter(logging.Formatter):
         }
 
         # Extra attributes commonly used
-        if hasattr(record, "request_id") and getattr(record, "request_id"):
-            payload["request_id"] = getattr(record, "request_id")
-        if hasattr(record, "path") and getattr(record, "path"):
-            payload["path"] = getattr(record, "path")
+        if hasattr(record, "request_id") and record.request_id:
+            payload["request_id"] = record.request_id
+        if hasattr(record, "path") and record.path:
+            payload["path"] = record.path
         if record.exc_info:
             payload["exc_info"] = self.formatException(record.exc_info)
 
@@ -50,7 +50,7 @@ class RequestIdFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:  # noqa: D401
         # Prefer existing attribute, otherwise inject from contextvar
-        if not hasattr(record, "request_id") or getattr(record, "request_id") is None:
+        if not hasattr(record, "request_id") or record.request_id is None:
             try:
                 record.request_id = REQUEST_ID_CTX.get()  # type: ignore[attr-defined]
             except Exception:
@@ -100,9 +100,7 @@ def setup_logging(settings: Settings) -> None:
                 url=loki_url,
                 version="1",
                 tags=tags,
-                auth=(os.getenv("LOKI_USERNAME"), os.getenv("LOKI_PASSWORD"))
-                if os.getenv("LOKI_USERNAME")
-                else None,
+                auth=(os.getenv("LOKI_USERNAME"), os.getenv("LOKI_PASSWORD")) if os.getenv("LOKI_USERNAME") else None,
                 tenant_id=tenant_id,
             )
             loki_handler.setFormatter(json_formatter)
@@ -112,4 +110,4 @@ def setup_logging(settings: Settings) -> None:
             logging.getLogger(__name__).warning("Failed to initialize Loki logging handler", exc_info=True)
 
     # Mark configured
-    setattr(root, "_acflp_logging_configured", True)  # type: ignore[attr-defined]
+    root._acflp_logging_configured = True  # type: ignore[attr-defined]
