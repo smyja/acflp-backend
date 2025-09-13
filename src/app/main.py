@@ -6,6 +6,8 @@ from fastapi import FastAPI
 from sqlalchemy.exc import IntegrityError
 
 from .admin.initialize import create_admin_interface
+from .core.logging_config import setup_logging
+from .middleware.request_id import RequestIDMiddleware
 from .api import router
 from .core.config import settings
 from .core.setup import create_application, lifespan_factory
@@ -48,7 +50,12 @@ async def lifespan_with_admin(app: FastAPI) -> AsyncGenerator[None, None]:
         yield
 
 
+setup_logging(settings)  # Configure JSON logging and optional Loki
+
 app = create_application(router=router, settings=settings, lifespan=lifespan_with_admin)
+
+# Add request ID middleware for correlation
+app.add_middleware(RequestIDMiddleware)
 
 # Mount admin interface if enabled
 if admin:
