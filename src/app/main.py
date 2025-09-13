@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 import logging
 
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy.exc import IntegrityError
 
 from .admin.initialize import create_admin_interface
@@ -56,6 +57,9 @@ app = create_application(router=router, settings=settings, lifespan=lifespan_wit
 
 # Add request ID middleware for correlation
 app.add_middleware(RequestIDMiddleware)
+
+# Expose Prometheus metrics (standard /metrics endpoint)
+Instrumentator().instrument(app).expose(app, include_in_schema=False, endpoint="/metrics")
 
 # Mount admin interface if enabled
 if admin:

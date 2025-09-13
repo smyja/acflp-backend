@@ -34,6 +34,7 @@ dependencies = [
     "mypy>=1.16.0",
     "fastapi-sso>=0.15.0",
     "python-logging-loki>=0.3.1",
+    "prometheus-fastapi-instrumentator>=7.1.0",
 ]
 
 [project.optional-dependencies]

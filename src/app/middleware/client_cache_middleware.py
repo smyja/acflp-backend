@@ -52,5 +52,7 @@ class ClientCacheMiddleware(BaseHTTPMiddleware):
             - This method is automatically called by Starlette for processing the request-response cycle.
         """
         response: Response = await call_next(request)
-        response.headers["Cache-Control"] = f"public, max-age={self.max_age}"
+        # Respect existing Cache-Control if already set by the route/handler
+        if "Cache-Control" not in response.headers:
+            response.headers["Cache-Control"] = f"public, max-age={self.max_age}"
         return response
