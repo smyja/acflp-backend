@@ -96,13 +96,30 @@ def setup_logging(settings: Settings) -> None:
                 "version": getattr(settings, "APP_VERSION", "") or "",
             }
             tenant_id = os.getenv("LOKI_TENANT_ID")
-            loki_handler = logging_loki.LokiHandler(  # type: ignore[attr-defined]
-                url=loki_url,
-                version="1",
-                tags=tags,
-                auth=(os.getenv("LOKI_USERNAME"), os.getenv("LOKI_PASSWORD")) if os.getenv("LOKI_USERNAME") else None,
-                tenant_id=tenant_id,
-            )
+            auth_user = os.getenv("LOKI_USERNAME")
+            auth = (auth_user, os.getenv("LOKI_PASSWORD")) if auth_user else None
+
+            common_kwargs: dict[str, Any] = {
+                "url": loki_url,
+                "version": "1",
+                "tags": tags,
+                "auth": auth,
+            }
+
+            try:
+                # Try newer API with tenant_id support
+                if tenant_id:
+                    loki_handler = logging_loki.LokiHandler(tenant_id=tenant_id, **common_kwargs)  # type: ignore[attr-defined]
+                else:
+                    loki_handler = logging_loki.LokiHandler(**common_kwargs)  # type: ignore[attr-defined]
+            except TypeError:
+                # Fallback for older python-logging-loki versions
+                loki_handler = logging_loki.LokiHandler(**common_kwargs)  # type: ignore[attr-defined]
+                if tenant_id:
+                    logging.getLogger(__name__).info(
+                        "LOKI_TENANT_ID set but ignored: installed python-logging-loki lacks tenant_id support"
+                    )
+
             loki_handler.setFormatter(json_formatter)
             loki_handler.addFilter(req_filter)
             root.addHandler(loki_handler)
